@@ -89,9 +89,12 @@ JavaScript и необходимые части оригинального OpenV
 
 ---
 
-## Screenshots
+## Скриншоты (Не факт что актуальные)
 
-Скриншоты интерфейса будут добавлены позже.
+<img width="1280" height="1068" alt="telegram-cloud-photo-size-2-5296382575570003304-y" src="https://github.com/user-attachments/assets/2d6d6517-1d71-4e38-b3ee-27281a64760e" />
+<img width="1280" height="1093" alt="telegram-cloud-photo-size-2-5296382575570003305-y" src="https://github.com/user-attachments/assets/c262d237-6912-4484-a511-57c9a9505091" />
+<img width="1280" height="1039" alt="telegram-cloud-photo-size-2-5296382575570003306-y" src="https://github.com/user-attachments/assets/9c63504d-4f8b-4786-9846-4d8b1461b42d" />
+<img width="1280" height="851" alt="telegram-cloud-photo-size-2-5296382575570003309-y" src="https://github.com/user-attachments/assets/0609dfd4-9f17-43ba-a22f-db6f00d8d0a5" />
 
 ---
 
