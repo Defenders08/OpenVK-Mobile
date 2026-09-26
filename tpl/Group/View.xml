@@ -1,0 +1,237 @@
+{extends "../@layout.xml"}
+{var $backdrops = $club->getBackDropPictureURLs()}
+
+{* Определяем, есть ли у сообщества реальный аватар (сравниваем с заглушкой
+   OpenVK по умолчанию) — раньше здесь было "$hasAvatar ?? false", а
+   GroupPresenter эту переменную никогда не передавал, поэтому кнопки
+   "добавить"/"сменить"/"удалить" аватар всегда были в состоянии "аватара нет". *}
+{var $hasAvatar = !str_contains($club->getAvatarUrl('miniscule'), "/assets/packages/static/openvk/img/camera_200.png")}
+
+{block title}{$club->getName()}{/block}
+
+{block headIncludes}
+    {if !$club->isBanned()}
+    {var $clubDesc = $club->getDescription()}
+    {var $clubDescTrimmed = !is_null($clubDesc) && mb_strlen($clubDesc) > 200 ? mb_substr($clubDesc, 0, 197) . '...' : $clubDesc}
+    {var $clubAvatar = $club->getAvatarUrl('normal')}
+    <meta property="og:title" content="{$club->getName()} — {$instance_name}" />
+    <meta property="og:url" content="{$baseUrl}{$club->getURL()}" />
+    <meta property="og:image" content="{$clubAvatar}" />
+    <meta property="og:type" content="profile" />
+    <meta n:if="!empty($clubDescTrimmed)" property="og:description" content="{$clubDescTrimmed}" />
+    <meta name="twitter:title" content="{$club->getName()} — {$instance_name}" />
+    <meta name="twitter:image" content="{$clubAvatar}" />
+    <meta n:if="!empty($clubDescTrimmed)" name="twitter:description" content="{$clubDescTrimmed}" />
+    {/if}
+{/block}
+
+{block header}
+    {$club->getName()}
+
+    <img n:if="$club->isVerified()"
+         class="name-checkmark"
+         src="/assets/packages/static/openvk/img/checkmark.png"
+         alt="{_verified_page}"
+         />
+{/block}
+
+{block content}
+{var $followersCount = $club->getFollowersCount()}
+{var $potentialFollowersCount = $club->isEvent() ? $club->getPotentialFollowersCount() : 0}
+
+<section id="sec_profile" class="page-section active">
+
+    <div n:if="!is_null($alert = $club->getAlert())" class="msg msg_err">{strpos($alert, "@") === 0 ? tr(substr($alert, 1)) : $alert}</div>
+
+    <!-- Карточка сообщества: аватар, имя, тип, кнопка вступления -->
+    <div style="padding: 10px; background: var(--color-background-secondary); border-bottom: 1px solid var(--color-border-list); display: flex; gap: 10px;">
+        {var $avatarPhoto = $club->getAvatarPhoto()}
+        {var $avatarLink = ((is_null($avatarPhoto) ? FALSE : $avatarPhoto->isAnonymous()) ? "/photo" . ("s/" . base_convert((string) $avatarPhoto->getId(), 10, 32)) : $club->getAvatarLink())}
+
+        {* Визуальный оверлей .avatar_controls (удалить/сменить аватар при наведении)
+           убран из интерфейса — редактирование аватара группы остаётся доступно
+           через «Редактировать группу» → /club{id}/edit (поле загрузки файла).
+           id="bigAvatar" сохранён как есть (штатный JS-хук, см. комментарий
+           в User/View.xml). *}
+        <div class="avatar_block" style="position: relative; width: 64px; height: 64px; flex-shrink: 0; border-radius: 3px; overflow: hidden;" data-club="{$club->getId()}">
+            {if $thisUser && $club->canBeModifiedBy($thisUser)}
+                <img id="bigAvatar" src="{$club->getAvatarUrl('normal')}" style="width: 100%; height: 100%; object-fit: cover; display: block;" alt="{$club->getName()}">
+            {else}
+                <a href="{$avatarLink|nocheck}">
+                    <img src="{$club->getAvatarUrl('normal')}" style="width: 100%; height: 100%; object-fit: cover; display: block;" alt="{$club->getName()}">
+                </a>
+            {/if}
+        </div>
+
+        <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 16px; font-weight: bold; color: var(--color-text-strong);">
+                {$club->getName()}
+                <img n:if="$club->isVerified()" class="name-checkmark" src="/assets/packages/static/openvk/img/checkmark.png" alt="{_verified_page}">
+            </div>
+            {* Под названием, как «Онлайн» у пользователя: количество участников. *}
+            <div style="font-size: 11px; color: var(--color-text-muted); margin-top: 1px;">
+                {tr("participants", $followersCount)}
+            </div>
+            {* Ниже, как строка статуса пользователя: тип сообщества. *}
+            <div style="font-size: 12px; color: var(--color-text-form); margin-top: 4px;">
+                {if $club->isEvent()}
+                    {if !$club->isClosed()}{_event_type_open}{else}{_event_type_closed}{/if}
+                {else}
+                    {if !$club->isClosed()}{_group_type_open}{else}{_group_type_closed}{/if}
+                {/if}
+            </div>
+        </div>
+    </div>
+
+    <!-- Действия: подписка/выход, редактирование, жалоба, игнор -->
+    <div style="padding: 8px 10px; background: var(--color-background-secondary); border-bottom: 1px solid var(--color-border-list); display: flex; flex-wrap: wrap; gap: 6px;" n:ifset="$thisUser">
+        {if $club->getSubscriptionStatus($thisUser) == false}
+            <form action="/setSub/club" method="post" style="flex: 1; min-width: 140px;">
+                <input type="hidden" name="act" value="add" />
+                <input type="hidden" name="id"  value="{$club->getId()}" />
+                <input type="hidden" name="hash" value="{$csrfToken}" />
+                {if $club->isEvent() && !$club->isEventOver()}
+                    <input type="submit" class="btn-vk" style="width: 100%;" value="{_ill_come_to_meeting}" />
+                {elseif $club->isEvent() && $club->isEventOver()}
+                    <input type="submit" class="btn-vk" style="width: 100%;" value="{_add_to_list_event}" />
+                {else}
+                    <input type="submit" class="btn-vk" style="width: 100%;" value="{_join_community}" />
+                {/if}
+            </form>
+            {if $club->isEvent() && !$club->isEventOver()}
+                <form action="/setSub/club" method="post" style="flex: 1; min-width: 140px;">
+                    <input type="hidden" name="act" value="add" />
+                    <input type="hidden" name="flag" value="1" />
+                    <input type="hidden" name="id"  value="{$club->getId()}" />
+                    <input type="hidden" name="hash" value="{$csrfToken}" />
+                    <input type="submit" class="btn-vk secondary" style="width: 100%;" value="{_i_might_come_to_meeting}" />
+                </form>
+            {/if}
+        {else}
+            <form action="/setSub/club" method="post" style="flex: 1; min-width: 140px;">
+                <input type="hidden" name="act" value="rem" />
+                <input type="hidden" name="id"  value="{$club->getId()}" />
+                <input type="hidden" name="hash" value="{$csrfToken}" />
+                {if $club->isEvent()}
+                    <input type="submit" class="btn-vk secondary" style="width: 100%;" value="{_ill_not_come_to_meeting}" />
+                {else}
+                    <input type="submit" class="btn-vk secondary" style="width: 100%;" value="{_leave_community}" />
+                {/if}
+            </form>
+        {/if}
+
+        {if $club->canBeModifiedBy($thisUser)}
+            <a href="/club{$club->getId()}/edit" class="btn-vk secondary" style="flex: 1; min-width: 140px; text-align: center;">{_edit_group}</a>
+        {/if}
+    </div>
+
+    {* Информация о сообществе — по принципу информационного блока пользователя
+       (.profile-info-block/.prof-info-row): описание, сайт, местоположение,
+       даты события, создатель (простой режим), и последними строками —
+       «Пожаловаться» и «Игнорировать группу» (сохранены, просто перенесены сюда
+       из убранного отдельного блока действий). *}
+    <div class="profile-info-block"
+         n:if="!empty($club->getDescriptionHtml()) || !is_null($club->getWebsite()) || !is_null($club->getLocation()) || $club->isEvent() || $club->getAdministratorsListDisplay() == 0 || $thisUser">
+        <div class="prof-info-row" n:if="!empty($club->getDescriptionHtml())">
+            <span class="prof-info-label">{_description}:</span>
+            <span class="prof-info-val">{$club->getDescriptionHtml()|noescape}</span>
+        </div>
+        <div class="prof-info-row" n:if="!is_null($club->getWebsite())">
+            <span class="prof-info-label">{_website}:</span>
+            <span class="prof-info-val"><a href="{$club->getWebsite()}" rel="ugc" target="_blank">{$club->getWebsite()}</a></span>
+        </div>
+        <div class="prof-info-row" n:if="!is_null($club->getLocation())">
+            <span class="prof-info-label">{_location}:</span>
+            <span class="prof-info-val">{$club->getLocation()}</span>
+        </div>
+        <div class="prof-info-row" n:if="$club->isEvent()">
+            <span class="prof-info-label">{_event_start_date}:</span>
+            <span class="prof-info-val">{$club->getStartDate()->relative(-1)}</span>
+        </div>
+        <div class="prof-info-row" n:if="$club->isEvent() && !is_null($club->getFinishDate())">
+            <span class="prof-info-label">{_event_finish_date}:</span>
+            <span class="prof-info-val">{$club->getFinishDate()->relative(-1)}</span>
+        </div>
+        <div class="prof-info-row" n:if="$club->getAdministratorsListDisplay() == 0 || $club->isEvent()">
+            {var $author = $club->getOwner()}
+            <span class="prof-info-label">{if $club->isEvent()}{_event_host}{else}{_creator}{/if}:</span>
+            <span class="prof-info-val"><a href="{$author->getURL()}">{$author->getCanonicalName()}</a>{if !empty($club->getOwnerComment())} — {$club->getOwnerComment()}{/if}</span>
+        </div>
+        {var $canReport = $thisUser && $thisUser->getId() != $club->getOwner()->getId()}
+        <div class="prof-info-row" n:if="$canReport">
+            <span class="prof-info-val"><a href="javascript:reportClub({$club->getId()})">{_report}</a></span>
+        </div>
+        <div class="prof-info-row" n:if="$thisUser && !$club->isHideFromGlobalFeedEnabled()">
+            <span class="prof-info-val">
+                <a id="__ignoreSomeone" data-val='{!$ignore_status ? 1 : 0}' data-id="{$club->getRealId()}">
+                    {if !$ignore_status}{_ignore_club}{else}{_unignore_club}{/if}
+                </a>
+            </span>
+        </div>
+    </div>
+
+    <!-- Быстрые счётчики разделов сообщества -->
+    <ul class="m-list" style="border-bottom: 1px solid var(--color-border);">
+        <li><a href="/club{$club->getId()}/followers" style="width: 100%; display: flex; justify-content: space-between;">
+            <b>{if $club->isEvent()}{_event_comers}{else}{_participants}{/if}</b> <span style="color:var(--color-text-muted);">{$followersCount}</span></a></li>
+        <li n:if="$club->isEvent() && $potentialFollowersCount > 0"><a href="/club{$club->getId()}/followers?mightcome=1" style="width: 100%; display: flex; justify-content: space-between;">
+            <b>{_event_potential_comers}</b> <span style="color:var(--color-text-muted);">{$potentialFollowersCount}</span></a></li>
+        {* Пустые разделы полностью скрыты (без "0"/заглушек) — как на странице пользователя. *}
+        <li n:if="$topicsCount > 0">
+            <a href="/board{$club->getId()}" style="width: 100%; display: flex; justify-content: space-between;">
+            <b>{_discussions}</b> <span style="color:var(--color-text-muted);">{$topicsCount}</span></a></li>
+        <li n:if="$thisUser && $albumsCount > 0">
+            <a href="/albums{$club->getId() * -1}" style="width: 100%; display: flex; justify-content: space-between;">
+            <b>{_albums}</b> <span style="color:var(--color-text-muted);">{$albumsCount}</span></a></li>
+        <li n:if="$thisUser && $audiosCount > 0">
+            <a href="/audios-{$club->getId()}" style="width: 100%; display: flex; justify-content: space-between;">
+            <b>{_audios}</b> <span style="color:var(--color-text-muted);">{$audiosCount}</span></a></li>
+        <li n:if="$thisUser && $docsCount > 0">
+            <a href="/docs{$club->getRealId()}" style="width: 100%; display: flex; justify-content: space-between;">
+            <b>{_documents}</b> <span style="color:var(--color-text-muted);">{$docsCount}</span></a></li>
+    </ul>
+
+    <!-- Администраторы (расширенный список с аватарками) — «Создатель» в простом
+         режиме уже показан строкой выше, внутри общего информационного блока. -->
+    <div n:if="$club->getAdministratorsListDisplay() == 1">
+        {var $managersCount = $club->getManagersCount(true)}
+        <ul class="m-list" style="border-bottom: 1px solid var(--color-border);">
+            <li n:if="!$club->isOwnerHidden()">
+                {var $author = $club->getOwner()}
+                <a href="{$author->getURL()}"><img src="{$author->getAvatarUrl('miniscule')}" style="width:32px;height:32px;border-radius:3px;object-fit:cover;"></a>
+                <div style="flex:1; min-width:0;">
+                    <a href="{$author->getURL()}" style="font-weight:bold; color:var(--color-primary-strong);">{$author->getCanonicalName()}</a>
+                    <div n:if="!empty($club->getOwnerComment())" style="font-size:11px; color:var(--color-text-muted);">{$club->getOwnerComment()}</div>
+                </div>
+            </li>
+            <li n:foreach="$club->getManagers(1, true) as $manager">
+                {var $user = $manager->getUser()}
+                <a href="{$user->getURL()}"><img src="{$user->getAvatarUrl('miniscule')}" style="width:32px;height:32px;border-radius:3px;object-fit:cover;"></a>
+                <div style="flex:1; min-width:0;">
+                    <a href="{$user->getURL()}" style="font-weight:bold; color:var(--color-primary-strong);">{$user->getCanonicalName()}</a>
+                    <div n:if="!empty($manager->getComment())" style="font-size:11px; color:var(--color-text-muted);">{$manager->getComment()}</div>
+                </div>
+            </li>
+        </ul>
+        <div style="padding: 6px 10px; font-size: 12px;">
+            <a href="/club{$club->getId()}/followers?onlyAdmins=1">{tr("administrators", $managersCount)} — {_all_title}</a>
+        </div>
+    </div>
+
+    <div n:if="isset($suggestedPostsCountByUser) && $suggestedPostsCountByUser > 0" class="sugglist" style="padding: 8px 10px;">
+        <a href="/club{$club->getId()}/suggested">{tr("suggested_by_you", $suggestedPostsCountByUser)}</a>
+    </div>
+
+    <div n:if="isset($suggestedPostsCountByEveryone) && $suggestedPostsCountByEveryone > 0" class="sugglist" style="padding: 8px 10px;">
+        <a href="/club{$club->getId()}/suggested">{tr("suggested_by_everyone", $suggestedPostsCountByEveryone)}</a>
+    </div>
+
+    <!-- Стена сообщества -->
+    {presenter "openvk!Wall->wallEmbedded", -$club->getId()}
+
+    <script n:if="isset($thisUser) && $club->getWallType() == 2 && !$club->canBeModifiedBy($thisUser)">
+        document.querySelector("textarea").setAttribute("placeholder", tr("suggest_new"))
+    </script>
+</section>
+
+{/block}

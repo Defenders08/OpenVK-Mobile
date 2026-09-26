@@ -1,0 +1,114 @@
+{*  =========================================================
+    DOCUMENT UPLOAD — загрузка документа без AJAX.
+
+    Запасная страница: обычно документы грузят через окно
+    (al_docs.js), но эта форма работает и без JavaScript.
+
+    Поля: name, tags, folder (0 — приватный, 4 — публичный),
+    owner_hidden, blob (файл), hash (CSRF).
+    Значения folder взяты из оригинала — не менять.
+
+    ВИЗУАЛ: форма оформлена в стиле экрана настроек из
+    вёрстки (label сверху, инпуты на всю ширину, кнопки btn-vk).
+    ========================================================= *}
+
+{extends "../@layout.xml"}
+
+{block title}{_document_uploading_in_general}{/block}
+
+{block header}
+    {if !is_null($group)}
+        <a href="{$group->getURL()}">{$group->getCanonicalName()}</a>
+        &raquo; <a href="/docs-{$group->getId()}">{_documents}</a>
+    {else}
+        <a href="{$thisUser->getURL()}">{$thisUser->getCanonicalName()}</a>
+        &raquo; <a href="/docs">{_documents}</a>
+    {/if}
+    &raquo; Non-AJAX Document upload
+{/block}
+
+{block content}
+    <form class="form vkx-doc-form" method="post" enctype="multipart/form-data">
+
+        <div class="form-field">
+            <label class="form-label" for="name">{_name}</label>
+            <input class="form-input" id="name" type="text" name="name" />
+        </div>
+
+        <div class="form-field">
+            <label class="form-label" for="tags">{_tags}</label>
+            <textarea class="form-input" id="tags" name="tags"></textarea>
+        </div>
+
+        <div class="form-field">
+            <label class="form-label" for="folder">{_accessbility}</label>
+            <select id="folder" name="folder">
+                <option value="0">Private file</option>
+                <option value="4">Public file</option>
+            </select>
+        </div>
+
+        <div class="form-field">
+            <label class="vkx-checkbox-label">
+                <input type="checkbox" name="owner_hidden" />
+                Owner is hidden
+            </label>
+        </div>
+
+        <div class="form-field">
+            <span class="form-label">{_file}</span>
+            <label class="button vkx-btn vkx-btn-secondary">
+                {_browse}
+                <input type="file" id="blob" name="blob" style="display: none;"
+                       onchange="filename.innerHTML=blob.files[0].name" />
+            </label>
+            <div id="filename"></div>
+        </div>
+
+        <input type="hidden" name="hash" value="{$csrfToken}" />
+
+        <div class="form-actions">
+            <input type="submit" class="button button-primary vkx-btn vkx-btn-primary" name="submit" value="{_upload_button}" />
+        </div>
+
+    </form>
+
+    <style>
+        .vkx-doc-form { max-width: 440px; padding: 14px; background: var(--color-background); }
+        .vkx-doc-form .form-field { margin-bottom: 14px; }
+        .vkx-doc-form .form-label {
+            display: block; font-size: 11px; font-weight: bold; color: var(--color-text-muted); text-transform: uppercase; margin-bottom: 6px;
+        }
+        .vkx-doc-form .form-input,
+        .vkx-doc-form select,
+        .vkx-doc-form textarea {
+            width: 100%; padding: 7px 8px; border: 1px solid var(--color-border-input); border-radius: 3px;
+            background: var(--color-background); font-size: 13px; color: var(--color-text-dark); box-sizing: border-box;
+        }
+        .vkx-doc-form textarea.form-input { min-height: 60px; resize: vertical; }
+        .vkx-doc-form .form-input:focus,
+        .vkx-doc-form select:focus,
+        .vkx-doc-form textarea:focus { outline: none; border-color: var(--color-primary); }
+        .vkx-doc-form .vkx-checkbox-label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--color-text-form); }
+        .vkx-doc-form #filename { margin-top: 8px; font-size: 12px; font-weight: bold; color: var(--color-primary-strong); word-break: break-all; }
+        .vkx-doc-form .form-actions { margin-top: 18px; }
+
+        .vkx-btn {
+            display: inline-block; padding: 6px 13px; font-size: 12px; font-weight: bold; border-radius: 2px;
+            text-align: center; line-height: 1.25; cursor: pointer; user-select: none; text-decoration: none !important;
+            border: none; transition: background 0.12s ease, transform 0.08s ease;
+        }
+        .vkx-btn-primary {
+            color: var(--color-background); background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-strong) 100%);
+            border: 1px solid var(--color-primary-strong); text-shadow: 0 -1px 0 var(--color-primary-shadow); box-shadow: inset 0 1px 0 var(--color-highlight-inset);
+        }
+        .vkx-btn-primary:hover { background: linear-gradient(180deg, var(--color-primary-light) 0%, var(--color-primary) 100%); border-color: var(--color-primary-strong); }
+        .vkx-btn-primary:active { background: var(--color-primary); transform: translateY(1px); }
+        .vkx-btn-secondary {
+            color: var(--color-primary-strong); background: linear-gradient(180deg, #f5f8fa 0%, #e6ebf0 100%);
+            border: 1px solid var(--color-border-input); box-shadow: inset 0 1px 0 var(--color-background);
+        }
+        .vkx-btn-secondary:hover { background: linear-gradient(180deg, #ffffff 0%, #edf1f6 100%); color: var(--color-primary-strong); }
+        .vkx-btn-secondary:active { background: var(--color-background-secondary); transform: translateY(1px); }
+    </style>
+{/block}

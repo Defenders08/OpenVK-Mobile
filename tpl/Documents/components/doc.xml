@@ -1,0 +1,78 @@
+{*  ---------------------------------------------------------
+    DOC — документ в списке.
+
+    $doc — объект Document.
+    $club — сообщество, если документы групповые (влияет на то,
+            у кого проверяется «уже добавлен»).
+    $copyImportance — показывать «Добавить» вместо «Убрать».
+    $noTags, $hideButtons, $scroll_context — режимы вывода.
+
+    ХУКИ JS (al_docs.js) — НЕ УДАЛЯТЬ:
+      class="docMainItem" + data-id — сам элемент;
+      class="viewerOpener"          — открыть просмотрщик;
+      id="edit_icon" / "report_icon" / "add_icon" / "remove_icon".
+
+    ?key={$doc->getAccessKey()} в ссылке — ключ доступа к
+    приватному документу. Без него откроется ошибка.
+
+    ВИЗУАЛ: класс vkx-doc-row/vkx-doc-icon/vkx-doc-info/vkx-doc-actions
+    добавлен ДОПОЛНИТЕЛЬНО к исходным классам — ничего не убрано,
+    поэтому старые селекторы (если где-то есть) продолжат работать.
+    --------------------------------------------------------- *}
+
+{var $preview = $doc->hasPreview() ? $doc->getPreview() : NULL}
+{var $tags = $doc->getTags()}
+{var $copied = !isset($club) ? $doc->isCopiedBy($thisUser) : $doc->isCopiedBy($club)}
+{var $modifiable = $doc->canBeModifiedBy($thisUser)}
+
+{* значения по умолчанию *}
+{var $scroll_context = $scroll_context ?? false}
+{var $hideButtons = $hideButtons ?? false}
+{var $noTags = $noTags ?? false}
+{var $copyImportance = $copyImportance ?? false}
+
+<div n:class="docMainItem, docListViewItem, list-item, vkx-doc-row, $scroll_context ? scroll_node" data-id="{$doc->getPrettiestId()}">
+
+    <div class="list-item-cover vkx-doc-icon">
+        <a class="viewerOpener" href="/doc{$doc->getPrettyId()}?key={$doc->getAccessKey()}">
+            {if $preview}
+                <span class="vkx-fileico"><img class="doc_icon" src="{$preview->getURLBySizeId('tiny')}" alt="" loading="lazy" /></span>
+            {else}
+                {* Превью нет — показываем расширение файла. *}
+                <span class="vkx-fileico doc_icon no_image vkx-noimg">{$doc->getFileExtension()}</span>
+            {/if}
+        </a>
+    </div>
+
+    <div class="list-item-info doc_content vkx-doc-info">
+        <a class="viewerOpener" href="/doc{$doc->getPrettyId()}?key={$doc->getAccessKey()}">
+            <b class="doc_name">{$doc->getName()}</b>
+        </a>
+
+        <div class="doc_content_info">
+            <span>{$doc->getFileExtension()}</span> &bull;
+            <span>{readable_filesize($doc->getFilesize())}</span> &bull;
+            <span>{$doc->getPublicationTime()}</span>
+
+            <span n:if="!$noTags && sizeof($tags) > 0" class="doc_tags">
+                {foreach $tags as $tag}
+                    <a href="/search?section=docs&tags={urlencode($tag)}">{$tag}</a>{if $tag != $tags[sizeof($tags) - 1]},{/if}
+                {/foreach}
+            </span>
+        </div>
+    </div>
+
+    <div n:if="!$hideButtons" class="list-item-actions vkx-doc-actions">
+        {* Прямое скачивание — как на странице документа (Documents/Page.xml). *}
+        <a class="button vkx-btn vkx-btn-secondary" href="{$doc->getURL()}" download="{downloadable_name($doc->getName())}">{_download_file}</a>
+
+        {* Кнопки-иконки. Их обрабатывает штатный JS по id. *}
+        <div class="doc_volume vkx-doc-volume" n:if="$thisUser">
+            <a n:if="!$modifiable" id="report_icon" title="{_report}"></a>
+            <a n:if="$modifiable" id="edit_icon" title="{_edit}"></a>
+            <a n:if="!$copied || $copied && $copyImportance" id="add_icon" title="{_add}"></a>
+            <a n:if="$copied && !$copyImportance" id="remove_icon" title="{_remove}"></a>
+        </div>
+    </div>
+
+</div>

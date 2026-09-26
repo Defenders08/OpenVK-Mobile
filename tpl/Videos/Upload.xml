@@ -1,0 +1,72 @@
+{*  =========================================================
+    VIDEO UPLOAD — загрузка видео (/videos/upload).
+
+    Отправку берёт на себя штатный скрипт js/al_videos.js,
+    поэтому нужны: id="videoUploadForm", id="uploadVideo",
+    id="percentage" и .progress-bar (индикатор загрузки).
+    Их удалять нельзя.
+
+    Поля формы: name, desc, blob (файл), link (ссылка на
+    внешнее видео), hash (CSRF).
+
+    onchange у поля файла показывает имя выбранного файла.
+    Это одна строка встроенного обработчика из оригинала;
+    отдельный JS-файл ради неё не нужен.
+    ========================================================= *}
+
+{extends "../@layout.xml"}
+
+{block title}{_upload_video}{/block}
+
+{block header}
+    <a href="/videos{$thisUser->getId()}">{_upload_video}</a>
+{/block}
+
+{block content}
+    <h4>{_upload_video}</h4>
+
+    <form class="form" method="post" enctype="multipart/form-data" id="videoUploadForm">
+
+        <div class="form-field">
+            <label class="form-label" for="name">{_name}</label>
+            <input class="form-input" id="name" type="text" name="name" />
+        </div>
+
+        <div class="form-field">
+            <label class="form-label" for="desc">{_description}</label>
+            <textarea class="form-input" id="desc" name="desc"></textarea>
+        </div>
+
+        <div class="form-field">
+            <span class="form-label">{_video}</span>
+            <label class="button">
+                {_browse}
+                <input type="file" id="blob" name="blob" accept="video/*" style="display: none;"
+                       onchange="filename.innerHTML=blob.files[0].name" />
+            </label>
+            <div id="filename"></div>
+        </div>
+
+        <div class="form-field">
+            <label class="form-label" for="link">{_video_link_to_yt}</label>
+            <input class="form-input" id="link" type="text" name="link"
+                   placeholder="https://www.youtube.com/watch?v=9FWSRQEqhKE" />
+        </div>
+
+        <input type="hidden" name="hash" value="{$csrfToken}" />
+
+        <div class="form-actions">
+            <input type="submit" class="button button-primary" name="submit" id="uploadVideo" value="{_upload_button}" />
+        </div>
+
+        {* Прогресс загрузки. Заполняет al_videos.js. *}
+        <div id="percentage" style="visibility: collapse;">
+            <div class="progress">
+                <div class="progress-bar" style="width:0%;"></div>
+            </div>
+        </div>
+
+    </form>
+
+    {script "js/al_videos.js"}
+{/block}

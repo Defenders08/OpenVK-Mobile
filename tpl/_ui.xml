@@ -1,0 +1,823 @@
+{*  =========================================================
+    _ui.xml — единый слой оформления по референсу (мобильный
+    «VK-classic»). Подключается из @layout.xml сразу ПОСЛЕ
+    основного <style>, поэтому при равной специфичности
+    выигрывает над ним.
+
+    Только CSS. Никаких изменений в разметке движка: ищем
+    существующие классы OpenVK (.tabs/.tab, .button,
+    .profile_link, .summaryBar, .container_gray, .paginator,
+    .message ...) и приводим их к дизайну из макета.
+
+    {syntax off} нужен, потому что в CSS много фигурных скобок.
+    ========================================================= *}
+{syntax off}
+<style>
+
+/* =========================================================
+   0. ШАПКА, ФЛЕШ-СООБЩЕНИЯ, МЕЛОЧИ
+   ========================================================= */
+.mhead-btn { text-decoration: none !important; position: relative; }
+.mhead-title a { color: var(--color-background); text-decoration: none; }
+.mhead-title a:hover { text-decoration: underline; }
+.mhead-badge {
+  position: absolute; top: 6px; right: 3px; min-width: 15px; height: 15px; padding: 0 4px;
+  background: #e64646; color: var(--color-background); border-radius: 8px; font-size: 10px; line-height: 15px;
+  text-align: center; text-shadow: none; font-weight: bold;
+}
+.menu-user a { text-decoration: none; }
+.menu-user-edit { font-size: 11px; color: var(--color-primary-strong); }
+.main-nav a em { min-width: 18px; text-align: center; }
+
+.msg {
+  margin: 0; padding: 10px 12px; font-size: 12.5px; line-height: 1.4;
+  background: #f3f7fb; border-bottom: 1px solid #d8e3ee; color: #33475b;
+}
+.msg b { color: var(--color-primary-strong); }
+.msg_succ { background: #eef8ec; border-bottom-color: #cfe6c9; }
+.msg_err  { background: #fdf0ef; border-bottom-color: #f0cfcb; }
+.msg_err b { color: #b3372f; }
+
+.message {
+  padding: 28px 16px; text-align: center; color: #7b8794; font-size: 13px; background: var(--color-background);
+}
+.message b { display: block; color: #4f6478; font-size: 14px; margin-bottom: 4px; }
+.message p { margin: 0; }
+.content_page_error { min-height: 0; }
+
+.hide_on_mobiles { }
+@media (max-width: 560px) { .hide_on_mobiles { display: none !important; } }
+
+.online, span.online { color: #4bb34b; }
+.name-checkmark { width: 13px; height: 13px; vertical-align: -2px; margin-left: 4px; flex-shrink: 0; }
+.nobold { font-weight: normal; }
+.fl_r { float: right; }
+.page { background: var(--color-background); }
+
+/* =========================================================
+   1. ВКЛАДКИ  (.tabs > .tab > a  /  .tabs-bar > .tab-item)
+      Один и тот же вид везде. Активная вкладка — ТОЛЬКО через
+      ссылку внутри (#act_tab_a) и #activetabs/#active на
+      контейнере, но заливка рисуется один раз: контейнер
+      .tab всегда прозрачный.
+   ========================================================= */
+.tabs, .tabs-bar {
+  position: relative; display: flex; flex-wrap: nowrap; align-items: center; gap: 5px;
+  padding: 7px 8px; background: var(--color-background); border-bottom: 1px solid var(--color-border);
+  overflow-x: auto; overflow-y: hidden; white-space: nowrap; scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.tabs::-webkit-scrollbar, .tabs-bar::-webkit-scrollbar { display: none; }
+
+.tabs .tab { display: inline-flex; flex: 0 0 auto; background: none !important; border: 0 !important; padding: 0; margin: 0; }
+.tabs .tab > a, .tabs .tab > span, .tabs-bar .tab-item {
+  display: inline-flex; align-items: center; padding: 4px 10px 5px; line-height: 1.3;
+  font-size: 13px; font-weight: normal; color: var(--color-primary-strong); white-space: nowrap;
+  background: var(--color-background-status); border: 1px solid var(--color-border); border-radius: 3px;
+  box-shadow: inset 0 1px 0 var(--color-background), 0 1px 1px rgba(0,0,0,.04);
+  text-decoration: none; cursor: pointer; user-select: none;
+}
+.tabs .tab > a:hover, .tabs-bar .tab-item:hover {
+  background: var(--color-background-status); border-color: var(--color-border-input); color: var(--color-primary-strong); text-decoration: none;
+}
+/* активная */
+.tabs .tab#activetabs > a, .tabs .tab#activetabs > span,
+.tabs .tab#active > a,     .tabs .tab#active > span,
+.tabs .tab > a#act_tab_a, .tabs .tab > span#act_tab_a,
+.tabs-bar .tab-item.selected {
+  background: linear-gradient(to bottom, var(--color-primary) 0%, var(--color-primary-strong) 100%);
+  border-color: var(--color-primary-strong); border-top-color: var(--color-primary-strong); border-bottom-color: var(--color-primary-strong);
+  color: var(--color-background); font-weight: bold; text-shadow: 0 -1px 0 var(--color-primary-shadow);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 1px 2px var(--color-shadow-soft);
+}
+/* счётчики */
+.tabs .tab em, .tabs .tab .special_counter, .tabs-bar .tab-item em {
+  font-style: normal; font-size: 10px; font-weight: normal; color: var(--color-primary-strong);
+  background: var(--color-background-secondary); padding: 1px 6px; border-radius: 8px; margin-left: 6px; line-height: 1.4;
+}
+.tabs .tab#activetabs em, .tabs .tab#active em, .tabs .tab > a#act_tab_a em,
+.tabs .tab#activetabs .special_counter, .tabs .tab#active .special_counter, .tabs .tab > a#act_tab_a .special_counter,
+.tabs-bar .tab-item.selected em {
+  color: var(--color-background); background: rgba(0,0,0,.18); box-shadow: inset 0 1px 2px rgba(0,0,0,.25);
+}
+/* правые действия внутри ряда вкладок */
+.tabs > .fl_r, .tabs > .tab-right, .tabs > .button, .tabs > input.button, .tabs > a.button { margin-left: auto; flex: 0 0 auto; float: none; }
+.tabs .fl_r .button { margin: 0; }
+/* «Загрузить» (документы) всегда остаётся видимой у правого края */
+.tabs > input.button#upload_entry_point { position: sticky; right: 0; box-shadow: -8px 0 8px -2px var(--color-background), inset 0 1px 0 var(--color-background); }
+.tabs > a:not(.button) { flex: 0 0 auto; }
+
+/* подвкладки (Друзья → Заявки: входящие / подписчики / исходящие) —
+   визуально та же система "чипов", что и .tabs/.tab выше (высота,
+   отступы, типографика, заливка активного состояния), разметка и
+   класс .is-active не меняются, ссылки и навигация те же. */
+.vkx-subtabs {
+  display: flex; flex-wrap: nowrap; align-items: center; gap: 5px; padding: 7px 8px;
+  background: var(--color-background); border-bottom: 1px solid var(--color-border);
+  overflow-x: auto; overflow-y: hidden; white-space: nowrap; scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.vkx-subtabs::-webkit-scrollbar { display: none; }
+.vkx-subtabs a {
+  display: inline-flex; align-items: center; flex: 0 0 auto; padding: 4px 10px 5px; line-height: 1.3;
+  font-size: 13px; font-weight: normal; color: var(--color-primary-strong); white-space: nowrap;
+  background: var(--color-background-status); border: 1px solid var(--color-border); border-radius: 3px;
+  box-shadow: inset 0 1px 0 var(--color-background), 0 1px 1px rgba(0,0,0,.04);
+  text-decoration: none; cursor: pointer; user-select: none;
+}
+.vkx-subtabs a:hover { background: var(--color-background-status); border-color: var(--color-border-input); color: var(--color-primary-strong); text-decoration: none; }
+.vkx-subtabs a.is-active {
+  background: linear-gradient(to bottom, var(--color-primary) 0%, var(--color-primary-strong) 100%);
+  border-color: var(--color-primary-strong); border-top-color: var(--color-primary-strong); border-bottom-color: var(--color-primary-strong);
+  color: var(--color-background); font-weight: bold; text-shadow: 0 -1px 0 var(--color-primary-shadow);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 1px 2px var(--color-shadow-soft);
+}
+
+/* =========================================================
+   2. КНОПКИ  (.button / .profile_link / .flat_button → .btn-vk secondary)
+   ========================================================= */
+.button, input.button, button.button, a.button, .flat_button,
+.profile_link, input.profile_link, a.profile_link {
+  -webkit-appearance: none; appearance: none;
+  display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  padding: 6px 13px; margin: 0; min-height: 28px; font-family: inherit; font-size: 12px; font-weight: bold; line-height: 1.25;
+  color: var(--color-primary-strong); background: linear-gradient(180deg, #f5f8fa 0%, #e6ebf0 100%);
+  border: 1px solid var(--color-border-input); border-radius: 2px; box-shadow: inset 0 1px 0 var(--color-background);
+  text-decoration: none; text-align: center; cursor: pointer; user-select: none; white-space: nowrap;
+}
+.button:hover, .profile_link:hover, .flat_button:hover {
+  background: linear-gradient(180deg, #fff 0%, #edf1f6 100%); color: var(--color-primary-strong); text-decoration: none;
+}
+.button:active, .profile_link:active, .flat_button:active { background: var(--color-background-secondary); transform: translateY(1px); }
+.button[disabled], .button.disabled { opacity: .55; cursor: default; pointer-events: none; }
+.profile_link_form { margin: 0; padding: 0; display: block; }
+
+/* =========================================================
+   3. ПОЛОСЫ: summaryBar, серые панели поиска, пагинатор
+   ========================================================= */
+.summaryBar, .summaryBarFlex {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 10px;
+  padding: 8px 10px; background: var(--color-background-secondary); border-bottom: 1px solid var(--color-border-list);
+  font-size: 12px; color: var(--color-text-secondary);
+}
+.summaryBar .summary { color: var(--color-text-secondary); }
+.summaryBar b { color: var(--color-text-strong); }
+.summaryBar select {
+  padding: 3px 6px; font-size: 12px; border: 1px solid var(--color-border-input); border-radius: 3px; background: var(--color-background); color: var(--color-text-form);
+}
+
+.container_gray { background: var(--color-background-secondary); border-bottom: 1px solid var(--color-border); padding: 8px 10px; }
+#groups_graybar { display: flex; gap: 8px; align-items: center; }
+#groups_graybar form { margin: 0; }
+#groups_graybar #search_box { flex: 1 1 auto; min-width: 0; }
+#groups_graybar #create_group { flex: 0 0 auto; }
+.vkx-search { display: flex; gap: 8px; align-items: center; padding: 8px 10px; background: var(--color-background-secondary); border-bottom: 1px solid var(--color-border); }
+.vkx-search form { flex: 1 1 auto; margin: 0; min-width: 0; }
+.vkx-search input[type="text"], .vkx-search input[type="search"], #groups_graybar input[type="text"], #groups_graybar input.header_search_input,
+.header_search_input {
+  width: 100% !important; padding: 8px 9px; border: 1px solid var(--color-border-input); border-radius: 3px; background: var(--color-background); font-size: 13px; color: var(--color-text-dark);
+  -webkit-appearance: none; appearance: none;
+}
+.vkx-search input:focus, #groups_graybar input:focus, .header_search_input:focus { border-color: var(--color-primary); outline: none; }
+.vkx-search input:disabled, #groups_graybar input:disabled, .header_search_input:disabled { background: var(--color-background-secondary); color: var(--color-text-tertiary); }
+
+/* Базовая заглушка для текстовых/поисковых полей без .vkx-form/.form/
+   .header_search_input — тот же вид, что и у остальной системы полей.
+   Более специфичные правила (.vkx-form, form.form, .header_search_input
+   и т.д.) остаются приоритетнее и не затрагиваются. */
+input[type="text"], input[type="search"] {
+  padding: 8px 9px; font-size: 13px; color: var(--color-text-dark); background: var(--color-background);
+  border: 1px solid var(--color-border-input); border-radius: 3px; -webkit-appearance: none; appearance: none;
+}
+input[type="text"]:focus, input[type="search"]:focus { border-color: var(--color-primary); outline: none; }
+input[type="text"]:disabled, input[type="search"]:disabled { background: var(--color-background-secondary); color: var(--color-text-tertiary); }
+input[type="text"]::placeholder, input[type="search"]::placeholder, .form-input::placeholder,
+.vkx-form input::placeholder, form.form input::placeholder, .small-textarea::placeholder {
+  color: #9aa7b4;
+}
+
+.paginator {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; padding: 10px 8px;
+  background: var(--color-background); border-top: 1px solid var(--color-border-list);
+}
+.paginator a {
+  min-width: 30px; padding: 4px 8px; text-align: center; font-size: 12px; color: var(--color-primary-strong);
+  background: var(--color-background-status); border: 1px solid var(--color-border); border-radius: 3px; text-decoration: none;
+}
+.paginator a:hover { background: var(--color-background-status); }
+.paginator a.active, .paginator a[class~="active"] {
+  color: var(--color-background); font-weight: bold; background: linear-gradient(to bottom, var(--color-primary), var(--color-primary-strong)); border-color: var(--color-primary-strong);
+}
+.summaryBar .paginator { padding: 0; border: 0; background: none; }
+
+/* =========================================================
+   4. СТРОКИ СПИСКОВ  (.list-item) — друзья, группы, встречи,
+      видео, альбомы, документы, лайкнувшие ...
+   ========================================================= */
+.list { background: var(--color-background); }
+.list-item {
+  display: flex; align-items: center; gap: 10px; padding: 10px;
+  background: var(--color-background); border-bottom: 1px solid var(--color-border-list);
+}
+.list-item:hover { background: var(--color-background-secondary); }
+.list-item-cover { flex: 0 0 auto; line-height: 0; }
+.list-item-cover > a, .list-item-cover > span { display: block; }
+.vkx-av { display: block; width: 48px; height: 48px; object-fit: cover; border-radius: 3px; background: var(--color-background-secondary); }
+.list-item-info { flex: 1 1 auto; min-width: 0; }
+.list-item-title {
+  display: inline-flex; align-items: center; max-width: 100%; color: var(--color-primary-strong); font-size: 13.5px; font-weight: bold;
+  line-height: 1.25; text-decoration: none;
+}
+.list-item-title:hover { text-decoration: underline; }
+.list-item-desc { margin-top: 2px; font-size: 12px; line-height: 1.35; color: var(--color-text-form); }
+.list-item-desc p { margin: 0 0 2px; }
+.list-item-desc a { color: var(--color-primary-strong); text-decoration: none; }
+.list-item-desc a:hover { text-decoration: underline; }
+.vkx-muted { color: var(--color-text-tertiary); font-size: 11.5px; }
+.vkx-muted a, .list-item-desc .vkx-muted a { color: var(--color-text-tertiary); }
+.vkx-muted a:hover { color: var(--color-primary-strong); }
+.vkx-clamp {
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word;
+}
+.vkx-online { color: #4bb34b; font-size: 11.5px; }
+
+.list-item-actions { flex: 0 0 auto; display: flex; flex-direction: column; align-items: stretch; gap: 5px; min-width: 96px; }
+.list-item-actions form { margin: 0; display: block; }
+.list-item-actions .button, .list-item-actions .profile_link { width: 100%; }
+.list-item-actions [href*="menu"], .list-item-actions .menu_toggle, .list-item-actions .add_to_menu { display: none !important; }
+
+/* "Создать сообщество" — плашка над списком */
+.vkx-create {
+  display: flex; align-items: center; gap: 10px; padding: 10px; background: var(--color-background-secondary); border-bottom: 1px solid var(--color-border); text-decoration: none;
+}
+.vkx-create:hover { background: var(--color-background-status); text-decoration: none; }
+.vkx-create-ico {
+  flex: 0 0 auto; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;
+  border-radius: 3px; background: linear-gradient(135deg, #edf3f8 0%, #dbe6f1 100%); border: 1px dashed #9fb9d3; color: var(--color-primary-strong);
+}
+.vkx-create-text { flex: 1 1 auto; min-width: 0; }
+.vkx-create-text b { display: block; color: var(--color-primary-strong); font-size: 13.5px; }
+.vkx-create-text span { display: block; color: #6a88a6; font-size: 11.5px; }
+.vkx-create-arrow { flex: 0 0 auto; color: #7e9bb9; }
+
+/* видео: превью 104×68 + плашка длительности */
+.vkx-thumb { position: relative; display: block; width: 104px; height: 68px; background: var(--color-text-dark); border-radius: 2px; overflow: hidden; }
+.vkx-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.vkx-dur {
+  position: absolute; right: 2px; bottom: 2px; padding: 1px 4px; border-radius: 2px;
+  background: rgba(0,0,0,.8); color: var(--color-background); font-size: 10px; line-height: 1.3;
+}
+.vkx-video-title { white-space: normal; }
+
+/* =========================================================
+   5. СЕТКИ (фото, документы-картинки, альбомы, закладки-фото)
+   ========================================================= */
+.vkx-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; padding: 4px; background: var(--color-background-hover); }
+.vkx-grid > * { min-width: 0; }
+.vkx-grid-item { position: relative; display: block; padding-bottom: 100%; background: var(--color-background-secondary); overflow: hidden; border-radius: 2px; cursor: pointer; }
+.vkx-grid-item > a, .vkx-grid-item > img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+.vkx-grid-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+@media (min-width: 420px) { .vkx-grid { grid-template-columns: repeat(4, 1fr); } }
+
+.vkx-grid-item > a.vkx-grid-del {
+  inset: auto; top: 3px; right: 3px; width: 22px; height: 22px; z-index: 2; display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; background: rgba(0,0,0,.55); color: var(--color-background); font-size: 15px; line-height: 1; text-decoration: none;
+}
+.vkx-grid-item > a.vkx-grid-del:hover { background: rgba(200,50,40,.9); }
+.tabs > .button + .button { margin-left: 0; }
+.list-item-actions.loading { opacity: .5; }
+.list-item-actions.disable { pointer-events: none; }
+.list-item-actions:not(:has(form, a, input, button)) { font-size: 12px; color: var(--color-primary-strong); text-align: center; min-width: 96px; }
+
+/* альбомы: карточка */
+.vkx-albums { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; padding: 8px; background: var(--color-background-hover); }
+.vkx-album { display: block; background: var(--color-background); border: 1px solid var(--color-border); border-radius: 3px; overflow: hidden; text-decoration: none; }
+.vkx-album:hover { border-color: #b9c8d8; text-decoration: none; }
+.vkx-album-cover { display: block; position: relative; padding-bottom: 72%; background: var(--color-background-secondary); }
+.vkx-album-cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.vkx-album-meta { display: block; padding: 7px 9px 8px; }
+.vkx-album-meta b { display: block; color: var(--color-primary-strong); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vkx-album-meta span { display: block; margin-top: 1px; color: var(--color-text-tertiary); font-size: 11.5px; }
+
+/* =========================================================
+   6. ДОКУМЕНТЫ
+   ========================================================= */
+.vkx-fileico {
+  display: flex; align-items: center; justify-content: center; width: 40px; height: 48px; border-radius: 3px;
+  background: #e8eef5; color: var(--color-primary-strong); font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: .2px; overflow: hidden;
+}
+.vkx-fileico img { width: 100%; height: 100%; object-fit: cover; }
+.doc_name { color: var(--color-primary-strong); font-size: 13.5px; font-weight: bold; word-break: break-word; }
+.doc_content_info { margin-top: 2px; font-size: 12px; color: var(--color-text-tertiary); }
+.doc_content_info a { color: var(--color-primary-strong); }
+.doc_tags { margin-left: 4px; }
+
+/* иконки-действия: JS ловит клик по #edit_icon и т.д., поэтому они должны быть видимы */
+.doc_volume { display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 2px; }
+/* та же высота (28px), что и у единой системы кнопок (.button/.btn-vk/.vkx-btn) */
+#edit_icon, #report_icon, #add_icon, #remove_icon {
+  display: inline-block; width: 28px; height: 28px; cursor: pointer; border-radius: 3px;
+  background-repeat: no-repeat; background-position: center; background-size: 16px 16px; opacity: .8;
+}
+#edit_icon:hover, #report_icon:hover, #add_icon:hover, #remove_icon:hover { opacity: 1; background-color: var(--color-background-status); }
+#edit_icon   { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%2355779c'><path d='M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5z'/></svg>"); }
+#report_icon { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%2355779c'><path d='M3 1.5a.5.5 0 0 1 1 0V2c1.5-.8 3-.6 4.5 0s3 .8 4.5-.2a.5.5 0 0 1 .8.4v6a.5.5 0 0 1-.2.4c-1.7 1.1-3.3.9-4.8.3S5 8.2 4 9v5.5a.5.5 0 0 1-1 0v-13z'/></svg>"); }
+#add_icon    { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%2355779c'><path d='M8 2a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5h-4.5a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 8 2z'/></svg>"); }
+#remove_icon { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%2355779c'><path d='M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.75.75 0 1 1 1.06 1.06L9.06 8l3.22 3.22a.75.75 0 1 1-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 0 1-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06z'/></svg>"); }
+
+/* .vkx-btn* — Documents/List.xml определяет их только у себя локально,
+   а components/doc.xml (переиспользуется в Search, Report, ApiGetContext)
+   тоже на них ссылается — дублируем глобально, чтобы кнопка "Скачать"
+   выглядела одинаково везде, а не только на странице списка документов. */
+.vkx-btn {
+  display: inline-block; padding: 6px 12px; font-size: 12px; font-weight: bold; border-radius: 2px;
+  text-align: center; line-height: 1.25; cursor: pointer; user-select: none; text-decoration: none !important;
+  transition: background 0.12s ease, transform 0.08s ease; border: none;
+}
+.vkx-btn-primary {
+  color: var(--color-background); background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-strong) 100%);
+  border: 1px solid var(--color-primary-strong); text-shadow: 0 -1px 0 var(--color-primary-shadow); box-shadow: inset 0 1px 0 var(--color-highlight-inset);
+}
+.vkx-btn-primary:hover { background: linear-gradient(180deg, var(--color-primary-light) 0%, var(--color-primary) 100%); border-color: var(--color-primary-strong); }
+.vkx-btn-secondary {
+  color: var(--color-primary-strong); background: linear-gradient(180deg, #f5f8fa 0%, #e6ebf0 100%);
+  border: 1px solid var(--color-border-input); box-shadow: inset 0 1px 0 var(--color-background);
+}
+.vkx-btn-secondary:hover { background: linear-gradient(180deg, #ffffff 0%, #edf1f6 100%); color: var(--color-primary-strong); }
+
+/* галерея картинок-документов: панели по наведению / всегда на таче */
+.docGalleryItem { position: relative; display: block; padding-bottom: 100%; overflow: hidden; background: var(--color-background-secondary); border-radius: 2px; }
+.docGalleryItem .docGalleryItem_main_preview { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.docGalleryItem .docGalleryItem_gif_preview { display: none; }
+.docGalleryItem .doc_top_panel { position: absolute; top: 0; right: 0; display: flex; padding: 2px; background: rgba(0,0,0,.35); border-radius: 0 0 0 4px; }
+.docGalleryItem .doc_top_panel .doc_volume_action { display: inline-block; width: 26px; height: 26px; background-color: transparent; filter: invert(1) brightness(2); }
+.docGalleryItem .doc_bottom_panel {
+  position: absolute; left: 0; right: 0; bottom: 0; display: flex; justify-content: space-between; gap: 6px;
+  padding: 12px 6px 4px; background: linear-gradient(to top, rgba(0,0,0,.6), rgba(0,0,0,0)); color: var(--color-background); font-size: 10.5px;
+}
+.docGalleryItem .doc_bottom_panel .doc_bottom_panel_size { flex: 0 0 auto; white-space: nowrap; }
+.docGalleryItem .doc_bottom_panel .doc_name {  flex: 1 1 auto; min-width: 0; color: var(--color-background); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.docGalleryItem .play-button { position: absolute; left: 50%; top: 50%; width: 32px; height: 32px; margin: -16px 0 0 -16px; border-radius: 50%; background: rgba(0,0,0,.55); }
+@media (hover: hover) {
+  .docGalleryItem .doc_shown_by_hover { opacity: 0; transition: opacity .12s; }
+  .docGalleryItem:hover .doc_shown_by_hover { opacity: 1; }
+}
+
+.vkx-doc-tags { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 10px; background: var(--color-background-secondary); border-bottom: 1px solid #e3e9ee; }
+.vkx-doc-tags a { padding: 2px 8px; font-size: 12px; color: var(--color-primary-strong); background: var(--color-background-status); border: 1px solid var(--color-border); border-radius: 10px; text-decoration: none; }
+.vkx-doc-tags a.is-active { color: var(--color-background); background: var(--color-primary); border-color: var(--color-primary-strong); }
+
+/* =========================================================
+   7. ФОРМЫ: настройки и редактирование профиля (.vkx-form)
+      Таблицы движка остаются как есть — «раскладываем» их в
+      блоки label → поле. name/id/action/CSRF не затронуты.
+   ========================================================= */
+.vkx-form, .container_gray.vkx-form { background: var(--color-background); padding: 0 0 6px; border: 0; }
+.vkx-form h4 {
+  margin: 0; padding: 9px 12px; background: var(--color-background-secondary); border-top: 1px solid var(--color-border-list); border-bottom: 1px solid var(--color-border-list);
+  font-size: 11.5px; font-weight: bold; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: .3px;
+}
+.vkx-form > h4:first-child, .vkx-form > form:first-child > h4:first-child { border-top: 0; }
+.vkx-form p { margin: 0; padding: 10px 12px; font-size: 12.5px; color: var(--color-text-secondary); line-height: 1.45; }
+.vkx-form form { margin: 0; }
+
+.vkx-form table, .vkx-form tbody, .vkx-form tr, .vkx-form td { display: block; width: 100% !important; border: 0; }
+.vkx-form table { margin: 0 !important; padding: 0; }
+.vkx-form tr { padding: 10px 12px 2px; border-bottom: 1px solid var(--color-border-list); }
+.vkx-form td { padding: 0 0 8px !important; }
+.vkx-form td[width], .vkx-form td:first-child:not(:only-child) { padding-bottom: 4px !important; }
+.vkx-form td .nobold, .vkx-form td:first-child > span, .vkx-form td:first-child label {
+  display: block; font-size: 11px; font-weight: bold; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: .2px;
+}
+.vkx-form td:empty { display: none; }
+.vkx-form tr:has(> td:only-child:empty) { display: none; }
+
+.vkx-form input[type="text"], .vkx-form input[type="email"], .vkx-form input[type="password"], .vkx-form input[type="phone"],
+.vkx-form input[type="tel"], .vkx-form input[type="number"], .vkx-form input[type="date"], .vkx-form input[type="url"],
+.vkx-form input:not([type]), .vkx-form select, .vkx-form textarea {
+  display: block; width: 100%; max-width: 100%; padding: 8px 9px; font-size: 13px; color: var(--color-text-dark); background: var(--color-background);
+  border: 1px solid var(--color-border-input); border-radius: 3px; box-shadow: inset 0 1px 1px rgba(0,0,0,.04);
+  -webkit-appearance: none; appearance: none;
+}
+.vkx-form select, .vkx-form textarea, .vkx-form input[type="text"], .vkx-form input[type="password"], .vkx-form input[type="email"] { width: 100% !important; }
+.vkx-form select {
+  padding-right: 28px; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' fill='none' stroke='%236a829e' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat; background-position: right 10px center;
+}
+.vkx-form textarea { min-height: 76px; resize: vertical; line-height: 1.4; }
+.vkx-form input:focus, .vkx-form select:focus, .vkx-form textarea:focus { border-color: var(--color-primary); box-shadow: 0 0 0 2px rgba(91,127,166,.18); }
+.vkx-form input[type="file"] { max-width: 100%; font-size: 12px; }
+.vkx-form input[disabled], .vkx-form select[disabled] { background: var(--color-background-secondary); color: var(--color-text-tertiary); }
+
+/* чекбоксы и радио → переключатели */
+.vkx-form label { cursor: pointer; }
+.vkx-form input[type="checkbox"] {
+  -webkit-appearance: none; appearance: none; flex: 0 0 auto; display: inline-block; vertical-align: middle;
+  position: relative; width: 38px; height: 22px; margin: 0 8px 0 0; border-radius: 11px; cursor: pointer;
+  background: #ccd5de; border: 1px solid #b9c4cf; transition: background .15s;
+}
+.vkx-form input[type="checkbox"]::after {
+  content: ""; position: absolute; top: 1px; left: 1px; width: 18px; height: 18px; border-radius: 50%;
+  background: var(--color-background); box-shadow: 0 1px 2px rgba(0,0,0,.3); transition: transform .15s;
+}
+.vkx-form input[type="checkbox"]:checked { background: var(--color-primary); border-color: var(--color-primary-strong); }
+.vkx-form input[type="checkbox"]:checked::after { transform: translateX(16px); }
+.vkx-form input[type="checkbox"]:focus-visible { box-shadow: 0 0 0 2px rgba(91,127,166,.35); }
+.vkx-form input[type="radio"] { margin: 0 6px 0 0; vertical-align: middle; accent-color: var(--color-primary); }
+.vkx-form label:has(> input[type="checkbox"]), .vkx-form label:has(> input[type="radio"]) {
+  display: flex; align-items: center; font-size: 13px; font-weight: normal; color: var(--color-text-strong); text-transform: none; letter-spacing: 0;
+}
+
+/* кнопки форм */
+.vkx-form input[type="submit"], .vkx-form button[type="submit"], .vkx-form .button[type="submit"] {
+  padding: 8px 22px; min-height: 34px; font-size: 13px; color: var(--color-background); text-shadow: 0 -1px 0 var(--color-primary-shadow);
+  background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-strong) 100%); border: 1px solid var(--color-primary-strong); box-shadow: inset 0 1px 0 rgba(255,255,255,.2);
+}
+.vkx-form input[type="submit"]:hover, .vkx-form button[type="submit"]:hover { background: linear-gradient(180deg, var(--color-primary-light) 0%, var(--color-primary) 100%); color: var(--color-background); }
+.vkx-form label.button, .vkx-form input[type="button"] { width: auto; }
+.vkx-form tr:has(input[type="submit"]) { background: var(--color-background-secondary); border-bottom: 0; padding-top: 12px; padding-bottom: 8px; }
+.vkx-form .flex_column_center_gap5px, .vkx-form center { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; padding: 12px; background: var(--color-background-secondary); }
+
+/* «Удалить страницу» и прочие красные ссылки */
+.vkx-form .settings_delete { padding: 12px; text-align: center; border-top: 1px solid var(--color-border-list); }
+.vkx-form .settings_delete { font-size: 12.5px; color: var(--color-text-secondary); line-height: 1.6; }
+.vkx-form .settings_delete a { color: var(--color-primary-strong); }
+.vkx-form .settings_delete a[onclick] { color: #b3372f; cursor: pointer; }
+
+/* таблицы «доп. поля» и прочие рамочные таблицы редактора */
+.vkx-form table.outline_table { margin: 8px 0 !important; border-top: 1px solid var(--color-border-list); border-bottom: 1px solid var(--color-border-list); background: #fbfcfd; }
+.vkx-form #small_remove_button {
+  width: 28px; height: 28px; cursor: pointer; border-radius: 3px; background: var(--color-background-secondary) center/16px no-repeat;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%236a829e'><path d='M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.75.75 0 1 1 1.06 1.06L9.06 8l3.22 3.22a.75.75 0 1 1-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 0 1-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06z'/></svg>");
+}
+.vkx-form #small_remove_button:hover { background-color: var(--color-background-status); }
+.vkx-form #backdropFilePicker { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 12px; }
+.vkx-form #backdropFilePicker #spacer { display: none; }
+
+/* =========================================================
+   8. ПРОЧЕЕ, что встречается в стоковых страницах
+   ========================================================= */
+.flexible_table { border-collapse: collapse; }
+.page-wrap, .page_content { background: var(--color-background); }
+.deleted_mark { padding: 12px; color: var(--color-text-tertiary); font-size: 12px; text-align: center; }
+.verticalGrayTabsWrapper { display: none; }
+.vkx-fave-item { border-bottom: 1px solid var(--color-border-list); }
+
+/* =========================================================
+   9. ФОРМЫ .form (вход, регистрация, загрузка фото/видео/документов,
+      редактирование альбомов) — тот же вид, что у .vkx-form
+   ========================================================= */
+form.form { background: var(--color-background); padding: 0 0 8px; margin: 0; }
+form.form h4, .page-wrap > h4, #docs_page_wrapper h4 {
+  margin: 0; padding: 9px 12px; background: var(--color-background-secondary); border-top: 1px solid var(--color-border-list); border-bottom: 1px solid var(--color-border-list);
+  font-size: 11.5px; font-weight: bold; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: .3px;
+}
+form.form > h4:first-child { border-top: 0; }
+form.form p { margin: 0; padding: 10px 12px; font-size: 12.5px; color: var(--color-text-secondary); line-height: 1.45; }
+.form-field { padding: 10px 12px 2px; border-bottom: 1px solid var(--color-border-list); }
+.form-field:last-of-type { border-bottom: 0; }
+.form-label { display: block; margin-bottom: 4px; font-size: 11px; font-weight: bold; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: .2px; }
+.form-input, form.form select, form.form textarea, form.form input[type="text"], form.form input[type="password"],
+form.form input[type="email"], form.form input[type="date"], form.form input[type="url"] {
+  display: block; width: 100%; max-width: 100%; margin: 0 0 8px; padding: 8px 9px; font-size: 13px; color: var(--color-text-dark); background: var(--color-background);
+  border: 1px solid var(--color-border-input); border-radius: 3px; box-shadow: inset 0 1px 1px rgba(0,0,0,.04); -webkit-appearance: none; appearance: none;
+}
+form.form textarea { min-height: 76px; resize: vertical; line-height: 1.4; }
+form.form select {
+  padding-right: 28px; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' fill='none' stroke='%236a829e' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat; background-position: right 10px center;
+}
+form.form input:focus, form.form select:focus, form.form textarea:focus { border-color: var(--color-primary); box-shadow: 0 0 0 2px rgba(91,127,166,.18); outline: none; }
+form.form input[type="file"] { max-width: 100%; font-size: 12px; }
+form.form input[type="checkbox"] { margin-right: 6px; accent-color: var(--color-primary); vertical-align: middle; }
+.form-actions, form.form .buttons, form.form .buttons-container { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px; background: var(--color-background-secondary); }
+.form-actions a.button, .form-actions .button { flex: 0 0 auto; }
+input.button-primary, .button.button-primary, .button.submit, form.form input[type="submit"] {
+  padding: 8px 22px; min-height: 34px; font-size: 13px; color: var(--color-background); text-shadow: 0 -1px 0 var(--color-primary-shadow);
+  background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-strong) 100%); border: 1px solid var(--color-primary-strong); box-shadow: inset 0 1px 0 rgba(255,255,255,.2);
+}
+input.button-primary:hover, .button.button-primary:hover, .button.submit:hover, form.form input[type="submit"]:hover { background: linear-gradient(180deg, var(--color-primary-light) 0%, var(--color-primary) 100%); color: var(--color-background); }
+.button.button-secondary { padding: 8px 16px; min-height: 34px; font-size: 13px; }
+form.form + p, .page-wrap > p { padding: 10px 12px; font-size: 12.5px; }
+
+/* заголовки и абзацы прямо в контенте страницы (регистрация, загрузка и т.п.) */
+#vk_wrap > h2 { margin: 0; padding: 12px 12px 4px; font-size: 16px; color: var(--color-primary-strong); }
+#vk_wrap > h4 { margin: 0; padding: 9px 12px; background: var(--color-background-secondary); border-top: 1px solid var(--color-border-list); border-bottom: 1px solid var(--color-border-list); font-size: 11.5px; font-weight: bold; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: .3px; }
+#vk_wrap > p { margin: 0; padding: 8px 12px; font-size: 12.5px; color: var(--color-text-secondary); line-height: 1.45; }
+#vk_wrap > form.form > h2 { margin: 0; padding: 12px 12px 4px; font-size: 16px; color: var(--color-primary-strong); }
+
+/* =========================================================
+   10. КОММЕНТАРИИ (components/comment.xml, article.post.comment)
+       и универсальная кнопка лайка (.post-like-button/.heart/.likeCnt),
+       используемая на страницах фото/видео/документов вне карточки поста.
+   ========================================================= */
+article.post.comment {
+  display: flex; gap: 9px; padding: 10px; border-bottom: 1px solid var(--color-border-list); background: var(--color-background);
+}
+.comment-avatar { flex: 0 0 auto; }
+.comment-avatar img { display: block; width: 30px; height: 30px; border-radius: 3px; object-fit: cover; background: var(--color-background-secondary); }
+.comment-body { flex: 1 1 auto; min-width: 0; }
+.comment-author { font-weight: bold; color: var(--color-primary-strong); font-size: 12.5px; display: flex; align-items: center; gap: 3px; }
+.comment-author a { color: inherit; text-decoration: none; }
+.comment-content .text { font-size: 13px; line-height: 1.4; color: var(--color-text-strong); margin-top: 2px; word-break: break-word; }
+.comment-actions {
+  margin-top: 4px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+  font-size: 11.5px; color: var(--color-text-tertiary);
+}
+.comment-actions a, .comment-actions .date { color: var(--color-text-tertiary); text-decoration: none; }
+.comment-actions a:hover { color: var(--color-primary-strong); text-decoration: underline; }
+
+.post-like-button {
+  display: inline-flex; align-items: center; gap: 4px; color: var(--color-text-tertiary); text-decoration: none; cursor: pointer;
+}
+.post-like-button:hover { color: var(--color-primary-strong); }
+.post-like-button.active, .post-like-button:has(.heart#liked) { color: #e6474f; }
+.heart {
+  display: inline-block; width: 12px; height: 12px; flex: 0 0 auto;
+  background: no-repeat center / contain;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path fill='none' stroke='%238a99a8' stroke-width='1.3' d='M8 13.7l-1.05-.96C3.23 9.38 1 7.36 1 4.85 1 2.82 2.6 1.25 4.6 1.25c1.13 0 2.22.53 2.9 1.36.68-.83 1.77-1.36 2.9-1.36 2 0 3.6 1.57 3.6 3.6 0 2.51-2.23 4.53-5.95 7.89L8 13.7z'/></svg>");
+}
+.heart#liked {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path fill='%23e6474f' d='M8 13.7l-1.05-.96C3.23 9.38 1 7.36 1 4.85 1 2.82 2.6 1.25 4.6 1.25c1.13 0 2.22.53 2.9 1.36.68-.83 1.77-1.36 2.9-1.36 2 0 3.6 1.57 3.6 3.6 0 2.51-2.23 4.53-5.95 7.89L8 13.7z'/></svg>");
+}
+.likeCnt:empty { display: none; }
+
+/* Лайк комментария — та же кнопка-«пилюля» (.post-btn), что и у лайка
+   поста (components/post.xml, @layout.xml:.post-btn/.post-icon),
+   прижата в правую часть строки .comment-actions. */
+.comment-actions .post-btn.post-like-button {
+  margin-left: auto;
+}
+
+/* Утилита .hidden — используется в components/textArea.xml и
+   Topics/Create.xml (#wallAttachmentMenu) для скрытия меню вложений
+   до клика. Оригинальный CSS OpenVK объявлял её глобально, а в этой
+   теме её не осталось ни разу — из-за этого меню прикрепления файлов
+   в форме комментария/темы форума показывалось раскрытым всегда. */
+.hidden { display: none !important; }
+
+/* Заголовок блока комментариев (components/comments.xml:
+   "Комментарии (N)" + переключатель сортировки) — раньше это была
+   голая строка текста без фона и отступов везде, где подключается
+   comments.xml (запись, фото, видео, заметка). */
+.comments > .page-header {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 9px 10px; background: var(--color-background-secondary); border-bottom: 1px solid var(--color-border-list);
+  font-size: 12.5px; font-weight: bold; color: var(--color-primary-strong);
+}
+.comments > .page-header .sort_link { font-size: 11.5px; font-weight: normal; color: var(--color-primary-strong); text-decoration: none; }
+.comments > .page-header .sort_link:hover { text-decoration: underline; }
+.comments_tip, .comments > p { padding: 14px 12px; text-align: center; color: var(--color-text-tertiary); font-size: 12.5px; background: var(--color-background); }
+
+/* Форма отправки комментария (components/textArea.xml) — тот же
+   штатный движок (al_comments.js/al_wall.js), что и у поста на стене,
+   но раньше визуально это был голый classic-вид без карточки. Классы
+   и id не трогаем (на них завязан JS), оформляем только внешний вид. */
+/* .small-textarea используется и в основной форме записи на стене
+   (components/textArea.xml, обёртка .wall-form), и в отдельной
+   форме комментария (#standaloneCommentBox) — раньше стиль был
+   объявлен только для #standaloneCommentBox, из-за чего поле ввода
+   записи на стене оставалось совсем без оформления. Общее правило
+   ниже покрывает оба случая; более специфичное правило для
+   #standaloneCommentBox ниже остаётся и просто дублирует те же
+   значения для этого контейнера. */
+.small-textarea {
+  display: block; width: 100%; box-sizing: border-box; min-height: 48px; padding: 7px 9px;
+  font-size: 13px; line-height: 1.4; color: var(--color-text-dark); background: var(--color-background); font-family: inherit;
+  border: 1px solid var(--color-border-input); border-radius: 3px; box-shadow: inset 0 1px 2px rgba(0,0,0,.06);
+  resize: vertical;
+}
+.small-textarea:focus { border-color: var(--color-primary); outline: none; }
+
+/* Композер комментария приведён к тому же виду, что и композер поста
+   на «Моей странице»/«Моих новостях» (components/wall.xml: .vk-wall-card/
+   .vk-post-textarea/.vk-btn-submit/.vk-btn-attach/.vk-nsfw-inline) —
+   те же отступы, высота поля, кнопки и фокус, только через CSS-оверрайды
+   поверх той же самой разметки textArea.xml (id/классы не менялись,
+   JS-хуки al_comments.js работают как прежде).
+
+   Найденный конфликт: у #write в components/textArea.xml остался
+   оригинальный inline-стиль style="padding: 5px 0" (унаследован от
+   старой вёрстки OpenVK). Инлайн-стиль всегда побеждает обычный
+   class/id-селектор независимо от специфичности — поэтому предыдущая
+   попытка переопределить padding здесь визуально не срабатывала.
+   !important ниже — не "на всякий случай", а единственный способ
+   перебить именно этот inline-стиль, не трогая сам textArea.xml
+   (он общий и с #standaloneCommentBox не связан). */
+#standaloneCommentBox #write.model_content_textarea {
+  padding: 10px 14px 11px 14px !important; background: var(--color-background-secondary);
+  border-top: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border);
+  box-sizing: border-box;
+}
+#standaloneCommentBox textarea.small-textarea {
+  display: block; width: 100%; box-sizing: border-box; height: 52px; min-height: 52px; padding: 7px 9px; margin: 0;
+  font-size: 13px; line-height: 17px; color: var(--color-text-strong); background: var(--color-background);
+  border: 1px solid var(--color-border-input); border-radius: 2px; box-shadow: inset 0 1px 2px rgba(0,0,0,.07);
+  resize: vertical;
+}
+#standaloneCommentBox textarea.small-textarea::placeholder { color: var(--color-text-muted); opacity: 1; }
+#standaloneCommentBox textarea.small-textarea:focus { border-color: var(--color-primary); outline: none; }
+
+/* Второй найденный конфликт — главный: #post-buttons в textArea.xml
+   рендерится с inline style="display: none;" (оригинальное поведение
+   OpenVK — "показать кнопки только после фокуса/клика в поле"). У формы
+   поста (components/wall.xml) той же панели этот inline-стиль давно
+   убрали, поэтому там кнопки видны сразу; у комментария он остался —
+   ровно это и скрывало кнопки/нижнюю панель в "неактивном" состоянии.
+   Тот же textArea.xml используется и на /wall{id} (Wall/Wall.xml),
+   поэтому не трогаем разметку напрямую — перебиваем именно здесь,
+   в рамках #standaloneCommentBox, тем же обоснованным !important. */
+#standaloneCommentBox .post-buttons { display: block !important; margin-top: 8px; }
+/* .post-has-poll в textArea.xml, в отличие от wall.xml, рендерится
+   без своего inline display:none и всегда содержит текст {_poll} —
+   без этой строки под кнопками всегда лишним текстом висело бы "Опрос",
+   даже когда никакой опрос не прикреплён. Показывается, только когда
+   штатный JS реально наполнит блок (та же логика, что у поста). */
+#standaloneCommentBox .post-has-poll:not(:has(> *)) { display: none; }
+/* Раньше кнопка «Прикрепить» была float:right без clearfix — родительский
+   блок схлопывался по высоте, и она визуально «обрезалась»/пряталась за
+   нижним краем карточки. */
+#standaloneCommentBox .post-buttons::after { content: ""; display: table; clear: both; }
+#standaloneCommentBox .post-opts {
+  display: flex; flex-wrap: wrap; gap: 10px; font-size: 12px; color: var(--color-text-secondary); margin: 0 0 8px;
+}
+#standaloneCommentBox .post-opts label { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
+
+#standaloneCommentBox .post-buttons input[type="submit"].button {
+  display: inline-block; box-sizing: border-box; height: 28px; line-height: 26px; padding: 0 18px;
+  background: var(--color-primary) linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-strong) 100%);
+  border: 1px solid var(--color-primary-strong); border-radius: 2px; color: var(--color-background) !important;
+  font-size: 12.5px; font-weight: 700; cursor: pointer; box-shadow: 0 1px 1px rgba(0,0,0,.15); text-align: center; outline: none;
+  vertical-align: middle;
+}
+#standaloneCommentBox .post-buttons input[type="submit"].button:hover {
+  background: var(--color-primary) linear-gradient(180deg, var(--color-primary-light) 0%, var(--color-primary) 100%);
+  border-color: var(--color-primary-strong);
+}
+#standaloneCommentBox .post-buttons input[type="submit"].button:active {
+  background: var(--color-primary-strong); box-shadow: inset 0 1px 2px rgba(0,0,0,.2);
+}
+
+#standaloneCommentBox .menu_toggler {
+  display: inline-block; box-sizing: border-box; height: 28px; line-height: 26px; padding: 0 13px; margin-left: 0;
+  background: var(--color-background-secondary) linear-gradient(180deg, #f5f7f8 0%, #e8ebed 100%);
+  border: 1px solid var(--color-border-input); border-radius: 2px;
+  color: var(--color-primary-strong); font-size: 12px; font-weight: 700; text-decoration: none !important; cursor: pointer; vertical-align: middle;
+  box-shadow: 0 1px 1px rgba(0,0,0,.05); text-align: center;
+}
+#standaloneCommentBox .menu_toggler:hover {
+  background: var(--color-background-hover) linear-gradient(180deg, #f9fafb 0%, #edf0f2 100%);
+}
+#standaloneCommentBox .menu_toggler:active { background: var(--color-background-secondary); box-shadow: inset 0 1px 2px rgba(0,0,0,.1); }
+#standaloneCommentBox #wallAttachmentMenu {
+  margin-top: 6px; background: var(--color-background); border: 1px solid var(--color-border-input); border-radius: 3px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.12); padding: 4px 0; max-width: 220px; clear: both;
+}
+#standaloneCommentBox #wallAttachmentMenu a {
+  display: flex; align-items: center; gap: 8px; padding: 6px 12px; font-size: 12.5px; color: var(--color-primary-strong); text-decoration: none;
+}
+#standaloneCommentBox #wallAttachmentMenu a:hover { background: var(--color-background-secondary); }
+#standaloneCommentBox #wallAttachmentMenu a.header { font-weight: bold; border-bottom: 1px solid var(--color-border-list); cursor: default; }
+#standaloneCommentBox #wallAttachmentMenu img { width: 16px; height: 16px; flex-shrink: 0; }
+#standaloneCommentBox .post-horizontal, #standaloneCommentBox .post-vertical { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; clear: both; }
+
+/* =========================================================
+   11. СТРАНИЦА ОДНОГО МЕДИА (Photos/Photo.xml, Videos/View.xml)
+       .media-page / .media-page-media / .media-page-description /
+       .media-page-comments / .media-page-actions
+   ========================================================= */
+.media-page { background: var(--color-background); }
+.media-page-media {
+  display: flex; align-items: center; justify-content: center; background: var(--color-text-dark);
+  min-height: 160px; max-height: 70vh; overflow: hidden;
+}
+.media-page-media img, .media-page-media video, .media-page-media .bsdn {
+  display: block; max-width: 100%; max-height: 70vh; width: auto; height: auto;
+}
+.media-page-description { padding: 10px 12px; border-bottom: 1px solid var(--color-border-list); }
+.media-page-description p { margin: 0 0 6px; font-size: 13px; line-height: 1.4; color: var(--color-text-strong); }
+.media-page-description .upload_time { font-size: 11.5px; color: var(--color-text-tertiary); display: flex; align-items: center; gap: 10px; }
+.media-page-actions {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 10px;
+  border-bottom: 1px solid var(--color-border-list); background: var(--color-background-secondary);
+}
+.media-page-actions .profile_link { flex: 0 0 auto; }
+.media-page-author-block { display: flex; align-items: center; gap: 6px; text-decoration: none; margin-right: auto; }
+.media-page-author-block img { width: 26px; height: 26px; border-radius: 3px; object-fit: cover; background: var(--color-background-secondary); }
+.media-page-author-block b { color: var(--color-primary-strong); font-size: 12.5px; }
+.media-page-comments { background: var(--color-background); }
+
+/* загрузка фото/видео (al_photos.js/al_videos.js рисуют превью сами) */
+.whiteBox { padding: 10px 12px; background: var(--color-background); }
+.whiteBox h4 { margin: 0 0 6px; font-size: 13px; color: var(--color-primary-strong); }
+.whiteBox ul { margin: 6px 0; padding-left: 18px; font-size: 12.5px; color: var(--color-text-secondary); }
+.whiteBox p { margin: 8px 0 0; font-size: 12px; color: var(--color-text-muted); }
+.photo_upload_container { background: var(--color-background); }
+.insertedPhoto { display: flow-root; padding: 8px 10px; border-bottom: 1px solid var(--color-border-list); }
+.uploadedImage img { border-radius: 3px; }
+.uploadedImage a.profile_link { display: inline-block; margin-top: 4px; }
+.progress { height: 8px; background: var(--color-border); border-radius: 4px; overflow: hidden; margin: 8px 0; }
+.progress-bar { height: 100%; background: var(--color-primary); }
+
+/* Пустое состояние стены/списка записей (нет постов) */
+.empty-state-block {
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px 16px; margin-top: 8px; border-radius: 8px;
+  background: var(--color-background); border: 1px solid rgba(0, 0, 0, .08); box-sizing: border-box;
+}
+.empty-state-text { font-size: 13px; color: #818c99; text-align: center; font-style: italic; }
+
+/* =========================================================
+   12. ОПРОСЫ (Poll/Poll.xml, Poll/PollResults.xml) — реальные
+       классы .poll/.poll-option/.poll-result*, а не выдуманные:
+       @layout.xml когда-то завёл .post-poll-* заготовку, но она
+       никогда не подключалась к настоящей разметке опроса, поэтому
+       любой опрос в посте показывался вообще без стилей.
+   ========================================================= */
+.poll {
+  margin-top: 6px; padding: 10px 12px; background: var(--color-background-secondary); border: 1px solid var(--color-border); border-radius: 3px;
+}
+.poll h4 { margin: 0 0 8px; font-size: 13.5px; font-weight: bold; color: var(--color-text-strong); line-height: 1.35; }
+.poll form { margin: 0; }
+.poll-options { display: flex; flex-direction: column; gap: 6px; }
+.poll-option {
+  background: var(--color-background); border: 1px solid var(--color-border-input); border-radius: 3px; padding: 7px 10px; transition: border-color 0.12s ease;
+}
+.poll-option:hover { border-color: var(--color-primary); }
+.poll-option label { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--color-text-strong); cursor: pointer; }
+.poll-option input[type="radio"], .poll-option input[type="checkbox"] { accent-color: var(--color-primary); flex-shrink: 0; }
+.poll input[type="submit"] { margin-top: 8px; }
+.poll-meta { margin-top: 8px; padding-top: 6px; border-top: 1px solid var(--color-border-list); font-size: 11px; color: var(--color-text-tertiary); }
+.poll-meta .nobold { font-weight: normal; }
+
+.poll-retract-vote { display: inline-block; margin-bottom: 6px; font-size: 11.5px; color: var(--color-primary-strong); text-decoration: none; }
+.poll-retract-vote:hover { text-decoration: underline; }
+.poll-results { display: flex; flex-direction: column; gap: 8px; }
+.poll-result > a { display: block; margin-bottom: 4px; font-size: 12.5px; color: var(--color-text-strong); text-decoration: none; }
+.poll-result > a:hover { text-decoration: underline; }
+.poll-result-barspace { display: flex; align-items: center; gap: 8px; }
+.poll-result-bar {
+  position: relative; flex: 1; min-width: 0; height: 20px; background: #eaeff4; border-radius: 3px; overflow: hidden;
+}
+.poll-result-bar-sub { position: absolute; inset: 0 auto 0 0; height: 100%; background: #cfe0f0; }
+.poll-result-count {
+  position: relative; z-index: 1; display: flex; align-items: center; height: 100%; padding-left: 6px;
+  font-size: 11px; color: var(--color-primary-strong); font-weight: bold;
+}
+.poll-result-pct { flex-shrink: 0; font-size: 12px; color: var(--color-primary-strong); }
+
+/* Мини-строка "аватар + имя [+ подпись]" — админы сайта/сообщества,
+   последний комментарий в теме форума (About/AboutInstance.xml,
+   Topics/Board.xml). Компактный вариант той же системы строк
+   списков, что и .list-item (та же типографика/цвета/hover), но
+   аватар оставлен меньше — оба места использования являются узкими
+   или вложенными блоками, где 48px аватар из .list-item не влезет. */
+.avatar-list-item { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+.avatar-list-item:hover { background: var(--color-background-secondary); }
+.avatar-list-item .avatar { flex: 0 0 auto; }
+.avatar-list-item .ava { display: block; width: 36px; height: 36px; border-radius: 3px; object-fit: cover; background: var(--color-background-secondary); }
+.avatar-list-item .info { min-width: 0; }
+.avatar-list-item .info.info-centered { display: flex; align-items: center; height: 36px; }
+.avatar-list-item .title { display: inline-block; max-width: 100%; color: var(--color-primary-strong); font-size: 12.5px; font-weight: bold; line-height: 1.25; text-decoration: none; }
+.avatar-list-item .title:hover { text-decoration: underline; }
+.avatar-list-item .subtitle { font-size: 11.5px; color: var(--color-text-tertiary); margin-top: 1px; }
+.pinned-mark {
+  display: inline-block; width: 10px; height: 10px; margin-left: 4px; vertical-align: -1px;
+  background: no-repeat center / contain;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%235b7fa6'><path d='M9.828.722a.5.5 0 0 1 .354.146l4.95 4.95a.5.5 0 0 1 0 .707c-.48.48-1.072.588-1.503.588-.177 0-.335-.018-.46-.039l-3.134 3.134a5.927 5.927 0 0 1 .16 1.013c.046.702-.032 1.687-.72 2.375a.5.5 0 0 1-.707 0l-2.829-2.828-3.182 3.182c-.195.195-1.219.902-1.414.707-.195-.195.512-1.22.707-1.414l3.182-3.182-2.828-2.829a.5.5 0 0 1 0-.707c.688-.688 1.673-.767 2.375-.72a5.922 5.922 0 0 1 1.013.16l3.134-3.133a2.772 2.772 0 0 1-.04-.461c0-.43.108-1.022.589-1.503a.5.5 0 0 1 .353-.146z'/></svg>");
+}
+
+/* =========================================================
+   13. ОГРАНИЧЕННЫЙ ДОСТУП К СТРАНИЦЕ (private/blacklisted/deactivated) —
+       старая 2-колоночная вёрстка (.left_small_block/.right_big_block),
+       под мобильный вид просто складываем в одну колонку.
+   ========================================================= */
+.left_small_block, .right_big_block { width: 100%; float: none; box-sizing: border-box; }
+.left_small_block { padding: 10px; background: var(--color-background-secondary); border-bottom: 1px solid var(--color-border-list); }
+.left_small_block img { border-radius: 3px; max-width: 160px; }
+.left_small_block #profile_links { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+.left_small_block #profile_links a.profile_link, .left_small_block #profile_links input.profile_link {
+  width: 100% !important; box-sizing: border-box;
+}
+.right_big_block .page_info { padding: 10px 12px; }
+.right_big_block .profileName h2 { margin: 0; font-size: 16px; color: var(--color-text-strong); }
+.right_big_block .page_status { font-size: 12px; margin-top: 2px; }
+.msg_yellow {
+  width: auto !important; margin-top: 10px; padding: 10px 12px; font-size: 12.5px; line-height: 1.4;
+  background: #fdf6e3; border: 1px solid #ecd9a0; border-radius: 3px; color: #7a5c00;
+}
+.msg_yellow a { color: var(--color-primary-strong); }
+
+/* заметки */
+.vkx-notes { background: var(--color-background); }
+.vkx-note { display: flex; gap: 10px; padding: 10px; border-bottom: 1px solid var(--color-border-list); }
+.vkx-note .profile_thumb { flex: 0 0 auto; }
+.vkx-note .note_body { flex: 1 1 auto; min-width: 0; word-break: break-word; }
+.vkx-note .note_title a { color: var(--color-primary-strong); font-size: 13.5px; font-weight: bold; text-decoration: none; }
+.vkx-note .byline { margin: 1px 0 6px; font-size: 11.5px; color: var(--color-text-tertiary); }
+.vkx-note .byline a { color: var(--color-text-tertiary); }
+.vkx-note .note_text { font-size: 13px; line-height: 1.4; color: var(--color-text-strong); }
+.vkx-note .note_footer { margin-top: 8px; font-size: 12px; color: var(--color-text-tertiary); }
+.vkx-note .note_footer a { color: var(--color-primary-strong); }
+</style>
+{/syntax}

@@ -1,0 +1,113 @@
+{*  =========================================================
+    @listView.xml — УНИВЕРСАЛЬНЫЙ СПИСОК
+
+    От него наследуются страницы-списки: друзья, альбомы,
+    видео, лайкнувшие и т.д. Страница не пишет разметку сама,
+    а определяет блоки:
+
+      tabs              — вкладки над списком;
+      size              — строка «найдено N» / ссылки действий;
+      before_content    — произвольный блок перед списком;
+      specpage          — ПОЛНАЯ замена списка своей разметкой;
+      top               — блок над первым элементом;
+      link              — URL элемента (обязательный);
+      preview           — превью элемента (обязательный);
+      name              — заголовок элемента;
+      description       — описание элемента;
+      infotable         — заменяет name + description целиком (таблица);
+      actions           — кнопки справа от элемента;
+      customErrorMessage — что показать, если список пуст;
+      bottom            — блок под списком.
+
+    Переменные: $iterator (данные), $page, $count, $perPage,
+    $table_body_id. Внутри блоков текущий элемент доступен
+    как $x (передаётся через `x => $dat`).
+
+    Стили строк — в _ui.xml (.list-item*).
+
+    class="scroll_container" / "scroll_node" — бесконечная
+    прокрутка (scroll.js). Блок noscroll её отключает.
+    ========================================================= *}
+
+{extends "@layout.xml"}
+
+{block content}
+{block wrap}
+
+
+    <div class="page">
+
+        {* Вкладки раздела *}
+        <div n:ifset="tabs" n:ifcontent class="tabs">
+            {include tabs}
+        </div>
+
+        {ifset size}{include size}{/ifset}
+        {ifset before_content}{include before_content, x => $dat}{/ifset}
+
+        {ifset specpage}
+            {* Страница рисует содержимое сама. *}
+            {include specpage}
+        {else}
+            <div class="list {ifset noscroll}no_scroll_container{else}scroll_container{/ifset}">
+
+                {var $data = isset($iterator) && $iterator !== null ? (is_array($iterator) ? $iterator : iterator_to_array($iterator)) : []}
+
+                {ifset top}{include top, x => $dat}{/ifset}
+
+                {if sizeof($data) > 0}
+
+                    <div class="list-item scroll_node" n:foreach="$data as $dat"
+                         n:attr="id => $table_body_id ?? NULL">
+
+                        {* Превью *}
+                        <div class="list-item-cover">
+                            <a href="{include link, x => $dat}">{include preview, x => $dat}</a>
+                        </div>
+
+                        {* Название и описание *}
+                        <div class="list-item-info">
+                            {ifset infotable}
+                                {include infotable, x => $dat}
+                            {else}
+                                <a href="{include link, x => $dat}" class="list-item-title">
+                                    {include name, x => $dat}
+                                </a>
+                                <div class="list-item-desc">{include description, x => $dat}</div>
+                            {/ifset}
+                        </div>
+
+                        {* Действия над элементом *}
+                        <div n:ifset="actions" n:ifcontent class="list-item-actions action_links">
+                            {include actions, x => $dat}
+                        </div>
+
+                    </div>
+
+                    {include "components/paginator.xml", conf => (object) [
+                        "page"     => $page,
+                        "count"    => $count,
+                        "amount"   => sizeof($data),
+                        "perPage"  => $perPage ?? \OPENVK_DEFAULT_PER_PAGE,
+                        "atBottom" => true,
+                        "atTop"    => false,
+                        "tidy"     => false
+                    ]}
+
+                {else}
+                    {ifset customErrorMessage}
+                        {include customErrorMessage}
+                    {else}
+                        {include "components/nothing.xml"}
+                    {/ifset}
+                {/if}
+
+            </div>
+        {/ifset}
+
+        {ifset bottom}{include bottom}{/ifset}
+
+    </div>
+
+{/block}
+{/block}

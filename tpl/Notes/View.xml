@@ -1,0 +1,81 @@
+{extends "../@layout.xml"}
+
+{block title}{$note->getName()}{/block}
+
+{block headIncludes}
+    {var $notePreview = $note->getPreview(200)}
+    <meta property="og:title" content="{$note->getName()} — {$instance_name}" />
+    <meta property="og:url" content="{$baseUrl}/note{$note->getPrettyId()}" />
+    <meta property="og:type" content="article" />
+    <meta n:if="!empty($notePreview)" property="og:description" content="{$notePreview}" />
+    <meta name="twitter:title" content="{$note->getName()} — {$instance_name}" />
+    <meta n:if="!empty($notePreview)" name="twitter:description" content="{$notePreview}" />
+{/block}
+
+{block header}
+   {$note->getName()}
+{/block}
+
+{block content}
+    {var $author = $note->getOwner()}
+    <style>
+        #userContent img { max-width: 100%; height: auto; }
+        #userContent blockquote {
+            background-color: var(--color-background-page);
+            border-bottom: 5px solid var(--color-border);
+            padding: 6px 8px;
+            margin: 8px 0;
+        }
+        #userContent cite { margin-top: 1em; display: block; }
+        #userContent cite::before { content: "— "; }
+        #userContent .underline { text-decoration: underline; }
+    </style>
+
+    <div class="vkx-notes vkx-note-single-wrap">
+        <article class="vkx-note vkx-note-single">
+            <div class="vkx-note-single-head">
+                <div class="note_title"><a>{$note->getName()}</a></div>
+                <div class="byline">
+                    <span><a href="{$author->getURL()}">{$author->getCanonicalName()}</a></span> {$note->getPublicationTime()}
+                    <span n:if="$note->getEditTime() > $note->getPublicationTime()">({_edited} {$note->getEditTime()})</span>
+                </div>
+            </div>
+            <div id="userContent" class="note_text">
+                {$note->getText()|noescape}
+            </div>
+            <div class="note_footer">
+                {if sizeof($comments) > 0}
+                    {_comments} ({$note->getCommentsCount()})
+                {else}
+                    {_no_comments}
+                {/if}
+                <span n:if="isset($thisUser) && $thisUser->getId() === $note->getOwner()->getId()">&nbsp;|&nbsp;
+                    <a id="_noteDelete" href="/note{$note->getOwner()->getId()}_{$note->getId()}/delete">{_delete}</a>
+                    &nbsp;|&nbsp;
+                    <a href="/note{$note->getOwner()->getId()}_{$note->getVirtualId()}/edit" rel='nofollow'>{_edit}</a>
+                </span>
+            </div>
+        </article>
+    </div>
+
+    {* Отдельная страница заметки — крупнее заголовок и явный отступ под
+       комментарии, как на референсе (zametki.html), без переопределения
+       общих классов .vkx-note (список заметок их не должен наследовать). *}
+    <style>
+        .vkx-note-single-wrap { border-bottom: 1px solid var(--color-border-list); }
+        .vkx-note-single { flex-direction: column; padding: 14px 12px; }
+        .vkx-note-single-head { border-bottom: 1px solid var(--color-border-list); padding-bottom: 10px; margin-bottom: 12px; }
+        .vkx-note-single .note_title a { font-size: 16px; }
+        .vkx-note-single .byline { margin-top: 4px; }
+        .vkx-note-single .note_footer { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--color-border-list); }
+    </style>
+    <div>
+        {include "../components/comments.xml",
+            comments => $comments,
+            count => $cCount,
+            page => $cPage,
+            model => "notes",
+            parent => $note,
+            showTitle => false}
+    </div>
+{/block}

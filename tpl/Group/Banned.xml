@@ -1,0 +1,16 @@
+{extends "../@layout.xml"}
+
+{block title}{$club->getCanonicalName()}{/block}
+
+{block header}{include title}{/block}
+
+{block content}
+<div class="message">
+    <img src="/assets/packages/static/openvk/img/oof.apng" alt="" style="width: 96px; margin-bottom: 10px;"/>
+    <b>{tr("group_banned", htmlentities($club->getCanonicalName()))|noescape}</b>
+    <p>{_user_banned_comment} {$club->getBanReason()}</p>
+    {if isset($thisUser) && $thisUser->getChandlerUser()->can('access')->model('admin')->whichBelongsTo(NULL)}
+        <p><a href="/admin/clubs/id{$club->getId()}?act=ban" target="_blank" class="button">{_edit}</a></p>
+    {/if}
+</div>
+{/block}

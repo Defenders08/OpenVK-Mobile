@@ -1,0 +1,73 @@
+{*  =========================================================
+    MESSENGER INDEX — список диалогов (/im).
+
+    $corresps      — диалоги текущей страницы;
+    $paginatorConf — пагинатор.
+
+    Поиск по сообщениям — настоящая форма POST /im/search
+    с полем pattern.
+
+    В оригинале переход в диалог был по onmousedown на всём
+    блоке. Мы заменили это обычной ссылкой <a>: так работает
+    и без JS, и правый клик, и открытие в новой вкладке.
+    ========================================================= *}
+
+{extends "../@layout.xml"}
+
+{block title}{_my_messages}{/block}
+{block header}{_my_messages}{/block}
+
+{block content}
+
+    <div class="tabs">
+        <div id="activetabs" class="tab">
+            <a id="act_tab_a" href="javascript:false">{_all_messages}</a>
+        </div>
+    </div>
+
+    <form class="form" action="/im/search" method="POST">
+        <input class="form-input" type="text" name="pattern" placeholder="{_search_messages}" required />
+    </form>
+
+    {if sizeof($corresps) > 0}
+
+        <div class="crp-list scroll_container">
+            <div n:foreach="$corresps as $coresp" class="scroll_node crp-entry">
+
+                {* Собеседник и последнее сообщение диалога. *}
+                {var $recipient = $coresp->getCorrespondents()[1]}
+                {var $lastMsg = $coresp->getPreviewMessage()}
+
+                <a class="crp-entry--link" href="{$coresp->getURL()}">
+                    <div class="crp-entry--image">
+                        <img src="{$recipient->getAvatarURL('miniscule')}" alt="" loading="lazy" />
+                    </div>
+
+                    <div class="crp-entry--info">
+                        <b>{$recipient->getCanonicalName()}</b>
+                        <span>{$lastMsg->getSendTimeHumanized()}</span>
+                    </div>
+
+                    {* Класс unread нужен, чтобы отличать непрочитанные. *}
+                    <div n:class="crp-entry--message, $lastMsg->getUnreadState() ? unread">
+                        {var $_author = $lastMsg->getSender()}
+
+                        {* Свои сообщения помечаем аватаром. *}
+                        <img n:if="$_author->getId() === $thisUser->getId()"
+                             class="crp-entry--message---av"
+                             src="{$_author->getAvatarURL('miniscule')}" alt="" />
+
+                        <span class="crp-entry--message---text">{$lastMsg->getText()|noescape}</span>
+                    </div>
+                </a>
+
+            </div>
+        </div>
+
+        {include "../components/paginator.xml", conf => $paginatorConf}
+
+    {else}
+        {include "../components/error.xml", description => tr("no_messages")}
+    {/if}
+
+{/block}

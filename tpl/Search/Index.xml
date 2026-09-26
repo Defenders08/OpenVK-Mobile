@@ -1,0 +1,456 @@
+{extends "../@layout.xml"}
+
+<style>
+/* Результаты поиска (люди/сообщества/встречи/приложения) — те же
+   строки-карточки .list-item, что и везде в теме (документы, друзья
+   и т.д.). Раньше здесь была верстка на <table><tr><td> без .list-item-*
+   классов внутри — эти правила не применялись вообще. */
+#search_page .list-item {
+    min-height: 76px;
+    padding: 10px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    background: var(--color-background);
+    border-bottom: 1px solid var(--color-border-list);
+}
+
+#search_page .list-item-cover {
+    flex: 0 0 auto;
+}
+
+#search_page .list-item-cover img {
+    display: block;
+    width: 56px;
+    height: 56px;
+    object-fit: cover;
+    border-radius: 3px;
+    background: var(--color-border);
+}
+
+#search_page .list-item-info {
+    min-width: 0;
+    flex: 1;
+}
+
+#search_page .list-item-title {
+    display: inline-block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-primary-strong);
+    font-weight: bold;
+    font-size: 13px;
+    text-decoration: none;
+}
+#search_page .list-item-title:hover { text-decoration: underline; }
+
+#search_page .list-item-desc {
+    margin-top: 4px;
+    line-height: 1.4;
+    font-size: 12px;
+    color: var(--color-text-form);
+}
+
+#search_page .search-meta {
+    margin-top: 5px;
+    font-size: 11px;
+    color: var(--color-text-tertiary);
+}
+
+#search_page .ugc-table {
+    margin-top: 5px;
+    width: 100%;
+}
+
+#search_page .ugc-table td {
+    padding: 2px 0;
+    vertical-align: top;
+    font-size: 12px;
+}
+
+#search_page .ugc-table td:first-child {
+    width: 1%;
+    padding-right: 8px;
+    white-space: nowrap;
+    color: var(--color-text-tertiary);
+}
+</style>
+
+
+{block title}
+    {tr("search_for_$section")}
+    {ifset $_REQUEST['q']}
+        - {$_REQUEST['q']}
+    {/ifset}
+{/block}
+
+{block header}
+    {tr("search_for_$section")}
+{/block}
+
+{block wrap}
+    {* default variables *}
+    {var $genre = $_REQUEST['genre'] ?? ''}
+    {var $only_performers = $_REQUEST['only_performers'] ?? false}
+    {var $with_lyrics = $_REQUEST['with_lyrics'] ?? ''}
+    {var $invert = $_REQUEST['invert'] ?? false}
+
+    <div class="wrap2">
+        <div class="wrap1">
+            <div class="page_wrap">
+                {if $section == 'audios' && $count > 1}
+                    {include "../Audio/bigplayer.xml", tidy => true}
+                    <script>
+                        window.__current_page_audio_context = {
+                            'name': 'classic_search_context',
+                            'order': {$order},
+                            'query': {$query},
+                            'genre': {$genre},
+                            'invert': {$invert ? 1 : 0},
+                            'only_performers': {$only_performers ? 1 : 0},
+                            'with_lyrics': {$with_lyrics ? 1 : 0},
+                            'page': {$page}
+                        }
+                    </script>
+                {/if}
+                <div class='summaryBar summaryBarFlex padding'>
+                    <div class='summary'>
+                        <b>{tr("results", $count)} <span class="showing_x_y_text">{tr("showing_x_y", $page, $count)}</span></b>
+                    </div>
+
+                    {include "../components/paginator.xml", conf => $paginatorConf}
+                </div>
+
+                <div class='page_wrap_content' id='search_page'>
+                    {* Настоящая форма поиска: GET /search, поля q/section —
+                       те же имена, что и везде в OpenVK. *}
+                    <form id="search_form" action="/search" method="get" class="search-panel">
+                        <input type="hidden" name="section" value="{$section}">
+                        <input type="search" name="q" n:attr="value => $query" placeholder="{_search}" autocomplete="off" />
+                        <button class="btn-vk" type="submit">{_search}</button>
+                    </form>
+
+                    {* Вкладки поиска. URL и section остаются оригинальными. *}
+                    <nav class="tabs-bar" aria-label="{_search}">
+                        <a class="tab-item {if $section === 'users'}selected{/if}" href="/search?section=users&q={urlencode($query)}">{_s_people}</a>
+                        <a class="tab-item {if $section === 'groups'}selected{/if}" href="/search?section=groups&q={urlencode($query)}">{_s_groups}</a>
+                        <a class="tab-item {if $section === 'events'}selected{/if}" href="/search?section=events&q={urlencode($query)}">{_s_events}</a>
+                        <a class="tab-item {if $section === 'posts'}selected{/if}" href="/search?section=posts&q={urlencode($query)}">{_s_posts}</a>
+                        <a class="tab-item {if $section === 'videos'}selected{/if}" href="/search?section=videos&q={urlencode($query)}">{_s_videos}</a>
+                        <a class="tab-item {if $section === 'apps'}selected{/if}" href="/search?section=apps&q={urlencode($query)}">{_s_apps}</a>
+                        <a class="tab-item {if $section === 'audios'}selected{/if}" href="/search?section=audios&q={urlencode($query)}">{_s_audios}</a>
+                        <a class="tab-item {if $section === 'audios_playlists'}selected{/if}" href="/search?section=audios_playlists&q={urlencode($query)}">{_s_audios_playlists}</a>
+                        <a class="tab-item {if $section === 'docs'}selected{/if}" href="/search?section=docs&q={urlencode($query)}">{_s_documents}</a>
+                    </nav>
+                    <div n:class='page_wrap_content_main, scroll_container, $section == "audios" && $count > 0 ? audios_padding'>
+                        
+                        {if $count > 0}
+                            {if $section === 'users'}
+                                <div class='list-item scroll_node search_content content def_row_content' n:foreach="$data as $dat">
+                                    <div class="list-item-cover">
+                                        <a href="{$dat->getURL()}">
+                                            <img src="{$dat->getAvatarUrl('tiny')}" alt="{_photo}" loading='lazy' />
+                                        </a>
+                                    </div>
+                                    <div class="list-item-info list_view_item_info">
+                                        <a href="{$dat->getURL()}" class="list-item-title">
+                                            <text style="overflow: hidden;">{$dat->getCanonicalName()}
+                                                {if $order     == "rating"}
+                                                    ({$dat->getProfileCompletenessReport()->total}%)
+                                                {/if}
+                                            </text>
+                                            <img n:if="$dat->isVerified()"
+                                                class="name-checkmark"
+                                                src="/assets/packages/static/openvk/img/checkmark.png"
+                                            />
+                                            {if $dat->getId() == $thisUser->getId()}
+                                                ({_s_it_is_you})
+                                            {/if}
+                                        </a>
+
+                                        <table class="ugc-table">
+                                            <tbody>
+                                                {if $_REQUEST["order"] == "id"}
+                                                    <tr>
+                                                        <td><span class="nobold">ID:</span></td>
+                                                        <td>{$dat->getId()}</td>
+                                                    </tr>
+                                                {/if}
+                                                {if $dat->getPrivacySetting("page.info.read") > 1}
+                                                    <tr>
+                                                        <td><span class="nobold">{_pronouns}: </span></td>
+                                                        <td>{$dat->isFemale() ? tr("female") : ($dat->isNeutral() ? tr("neutral") : tr("male"))}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td><span class="nobold">{_relationship}:</span></td>
+                                                        <td>{$dat->getLocalizedMaritalStatus()}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td><span class="nobold">{_registration_date}: </span></td>
+                                                        <td>{$dat->getRegistrationTime()}</td>
+                                                    </tr>
+                                                    {if !empty($dat->getDescription())}
+                                                    <tr>
+                                                        <td>
+                                                            <span class="nobold">{_description}:</span>
+                                                        </td>
+                                                        <td>
+                                                            {$dat->getDescription() ?? '(' . tr("none") . ')'}
+                                                        </td>
+                                                    </tr>
+                                                    {/if}
+                                                    {if !empty($_REQUEST["fav_mus"])}
+                                                        <tr>
+                                                            <td><span class="nobold">{_favorite_music}:</span></td>
+                                                            <td>{$dat->getFavoriteMusic()}</td>
+                                                        </tr>
+                                                    {/if}
+                                                    {if !empty($_REQUEST["fav_films"])}
+                                                        <tr>
+                                                            <td><span class="nobold">{_favorite_films}:</span></td>
+                                                            <td>{$dat->getFavoriteFilms()}</td>
+                                                        </tr>
+                                                    {/if}
+                                                    {if !empty($_REQUEST["fav_shows"])}
+                                                        <tr>
+                                                            <td><span class="nobold">{_favorite_shows}:</span></td>
+                                                            <td>{$dat->getFavoriteShows()}</td>
+                                                        </tr>
+                                                    {/if}
+                                                    {if !empty($_REQUEST["fav_books"])}
+                                                        <tr>
+                                                            <td><span class="nobold">{_favorite_books}:</span></td>
+                                                            <td>{$dat->getFavoriteBooks()}</td>
+                                                        </tr>
+                                                    {/if}
+                                                {/if}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <script n:if='$count > 0 && !empty($query)'>
+                                    function __scrollHook(page) {
+                                        highlightText({$query}, '.page_wrap_content_main', ['text'])
+                                    }
+
+                                    __scrollHook()
+                                </script>
+                            {elseif $section === 'groups'}
+                                <div class='list-item scroll_node search_content content def_row_content' n:foreach="$data as $dat">
+                                    <div class="list-item-cover">
+                                        <a href="{$dat->getURL()}">
+                                            <img src="{$dat->getAvatarUrl('tiny')}" alt="{_photo}" loading='lazy' />
+                                        </a>
+                                    </div>
+                                    <div class="list-item-info list_view_item_info">
+                                        <a href="{$dat->getURL()}" class="list-item-title">
+                                            <text style="overflow: hidden;">{$dat->getCanonicalName()}
+                                                {if $order == "id"}
+                                                    (id{$dat->getId()})
+                                                {/if}
+                                            </text>
+                                            <img n:if="$dat->isVerified()"
+                                                class="name-checkmark"
+                                                src="/assets/packages/static/openvk/img/checkmark.png"
+                                            />
+                                        </a>
+
+                                        <table class="ugc-table">
+                                            <tbody>
+                                                {if !empty($dat->getDescription())}
+                                                    <tr>
+                                                        <td>
+                                                            <span class="nobold">{_description}:</span>
+                                                        </td>
+                                                        <td data-highlight='_clubDesc'>
+                                                            {$dat->getDescription() ?? '(' . tr("none") . ')'}
+                                                        </td>
+                                                    </tr>
+                                                {/if}
+                                                <tr>
+                                                    <td>
+                                                        <span class="nobold">{_size}:</span>
+                                                    </td>
+                                                    <td>
+                                                        {tr("participants", $dat->getFollowersCount())}
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <script n:if='$count > 0 && !empty($query)'>
+                                    function __scrollHook(page) {
+                                        highlightText({$query}, '.page_wrap_content_main', ['text', "td[data-highlight='_clubDesc']"])
+                                    }
+
+                                    __scrollHook()
+                                </script>
+                            {elseif $section === 'events'}
+                                <div class='list-item scroll_node search_content content def_row_content' n:foreach="$data as $dat">
+                                    <div class="list-item-cover">
+                                        <a href="{$dat->getURL()}">
+                                            <img src="{$dat->getAvatarUrl('tiny')}" alt="{_photo}" loading='lazy' />
+                                        </a>
+                                    </div>
+                                    <div class="list-item-info list_view_item_info">
+                                        <a href="{$dat->getURL()}" class="list-item-title">
+                                            <text style="overflow: hidden;">{$dat->getCanonicalName()}
+                                                {if $order == "id"}
+                                                    (id{$dat->getId()})
+                                                {/if}
+                                            </text>
+                                            <img n:if="$dat->isVerified()"
+                                                class="name-checkmark"
+                                                src="/assets/packages/static/openvk/img/checkmark.png"
+                                            />
+                                        </a>
+
+                                        <table class="ugc-table">
+                                            <tbody>
+                                                {if !empty($dat->getDescription())}
+                                                    <tr>
+                                                        <td>
+                                                            <span class="nobold">{_description}:</span>
+                                                        </td>
+                                                        <td data-highlight='_clubDesc'>
+                                                            {$dat->getDescription() ?? '(' . tr("none") . ')'}
+                                                        </td>
+                                                    </tr>
+                                                {/if}
+                                                <tr>
+                                                    <td>
+                                                        <span class="nobold">{_size}:</span>
+                                                    </td>
+                                                    <td>
+                                                        {tr("participants", $dat->getFollowersCount())}
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <span class="nobold">{_event_start_date}:</span>
+                                                    </td>
+                                                    <td>
+                                                        {$dat->getStartDate()}
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <script n:if='$count > 0 && !empty($query)'>
+                                    function __scrollHook(page) {
+                                        highlightText({$query}, '.page_wrap_content_main', ['text', "td[data-highlight='_clubDesc']"])
+                                    }
+
+                                    __scrollHook()
+                                </script>
+                            {elseif $section === 'apps'}
+                                <div class='list-item scroll_node search_content content def_row_content' n:foreach="$data as $dat">
+                                    <div class="list-item-cover">
+                                        <a href="/app{$dat->getId()}">
+                                            <img src="{$dat->getAvatarUrl('miniscule')}" alt="{_photo}" loading='lazy' />
+                                        </a>
+                                    </div>
+                                    <div class="list-item-info list_view_item_info">
+                                        <a href="/app{$dat->getId()}" class="list-item-title">
+                                            <text style="overflow: hidden;">{$dat->getName()}</text>
+                                        </a>
+                                        <div class="list-item-desc" data-highlight='_appDesc'>
+                                            {$dat->getDescription() ?? '(' . tr("none") . ')'}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <script n:if='$count > 0 && !empty($query)'>
+                                    function __scrollHook(page) {
+                                        highlightText({$query}, '.page_wrap_content_main', ['text', "span[data-highlight='_appDesc']"])
+                                    }
+
+                                    __scrollHook()
+                                </script>
+                            {elseif $section === 'posts'}
+                                <div class='scroll_node search_content' n:foreach="$data as $dat">
+                                    {var $wallOwner = $dat ? $dat->getWallOwner() : null}
+                                    {var $postOwner = $dat ? $dat->getOwner() : null}
+                                    {if !$dat || !$wallOwner || !$postOwner || $wallOwner->isHideFromGlobalFeedEnabled()}
+                                        {_closed_group_post}.
+                                    {else}
+                                        {include "../components/post.xml", post => $dat, commentSection => true, onWallOf => true}
+                                    {/if}
+                                </div>
+
+                                <script n:if='$count > 0 && !empty($query)'>
+                                    function __scrollHook(page) {
+                                        highlightText({$query}, '.page_wrap_content_main', [".post:not(.comment) > tbody > tr > td > .post-content > .text .really_text"])
+                                    }
+
+                                    __scrollHook()
+                                </script>
+                            {elseif $section === 'videos'}
+                                <div class='scroll_node search_content' n:foreach="$data as $dat">
+                                    {include "../components/video.xml", video => $dat}
+                                </div>    
+
+                                <script n:if='$count > 0 && !empty($query)'>
+                                    function __scrollHook(page) {
+                                        highlightText({$query}, '.page_wrap_content_main', [".video_name", ".video_description"])
+                                    }
+
+                                    __scrollHook()
+                                </script>
+                            {elseif $section === 'audios'}
+                                <div class='scroll_node search_content' n:foreach="$data as $dat">
+                                    {include "../Audio/player.xml", audio => $dat}
+                                </div>
+                                
+                                <script n:if="$count > 0 && !empty($query) && empty($only_performers)">
+                                    function __scrollHook(page) {
+                                        highlightText({$query}, '.page_wrap_content_main', [".mediaInfo .performer a", ".mediaInfo .title"])
+                                    }
+
+                                    __scrollHook()
+                                </script>
+                            {elseif $section === 'audios_playlists'}
+                                <div class='scroll_node search_content' n:foreach="$data as $dat">
+                                    {include "../Audio/playlistListView.xml", playlist => $dat}
+                                </div>
+
+                                <script n:if="$count > 0 && !empty($query) && empty($only_performers)">
+                                    function __scrollHook(page) {
+                                        highlightText({$query}, '.page_wrap_content_main', [".playlistName", ".playlistDesc"])
+                                    }
+
+                                    __scrollHook()
+                                </script>
+                            {elseif $section === 'docs'}
+                                <div class='scroll_node search_content' n:foreach="$data as $dat">
+                                    {include "../Documents/components/doc.xml", doc => $dat, copyImportance => true}
+                                </div>
+
+                                <script n:if="$count > 0 && !empty($query)">
+                                    function __scrollHook(page) {
+                                        highlightText({$query}, '.page_wrap_content_main', [".doc_content .noOverflow"])
+                                    }
+
+                                    __scrollHook()
+                                </script>
+                            {/if}
+                        {else}
+                            {include "../components/content_error.xml", description => tr("no_results_by_this_query")}
+                        {/if}
+                    </div>
+                </div>
+
+                <div n:if='$paginatorConf->pageCount > 1' class='page_content_paginator_bottom'>
+                    {include "../components/paginator.xml", conf => $extendedPaginatorConf}
+                </div>
+            </div>
+        </div>
+    </div>
+{/block}

@@ -1,0 +1,104 @@
+{*  =========================================================
+    PHOTO — страница фотографии (/photo{owner}_{id}).
+
+    $photo, $owner, $album (может отсутствовать),
+    $comments, $cCount, $cPage.
+
+    custom_id => 999 в комментариях — из оригинала: на этой
+    странице поле ввода получает фиксированный ID.
+    ========================================================= *}
+
+{extends "../@layout.xml"}
+
+{block title}{_photo}{/block}
+
+{block headIncludes}
+    {var $photoUrl = $photo->getURLBySizeId('normal')}
+
+    {* Размеры могут не читаться у битых файлов — ловим ошибку. *}
+    {php $photoDims = null}
+    {php try { $photoDims = $photo->getDimensions(); } catch(\Throwable $e) { $photoDims = null; } }
+
+    <meta property="og:title" content="{_photo} — {$instance_name}" />
+    <meta property="og:url" content="{$baseUrl}/photo{$photo->getPrettyId()}" />
+    <meta property="og:image" content="{$photoUrl}" />
+    <meta n:if="!is_null($photoDims)" property="og:image:width" content="{$photoDims[0]}" />
+    <meta n:if="!is_null($photoDims)" property="og:image:height" content="{$photoDims[1]}" />
+    <meta property="og:type" content="article" />
+    <meta n:if="!empty($photo->getDescription())" property="og:description"
+          content="{mb_strlen($photo->getDescription()) > 300 ? mb_substr($photo->getDescription(), 0, 297) . '...' : $photo->getDescription()}" />
+    <meta name="twitter:title" content="{_photo} — {$instance_name}" />
+    <meta name="twitter:image" content="{$photoUrl}" />
+{/block}
+
+{block header}
+    {ifset $album}
+        {var $album_owner = $album->getOwner()}
+        {if ($album_owner instanceof openvk\Web\Models\Entities\Club)}
+            <a href="/albums{$album_owner->getId() * -1}">{_photo}</a>
+        {else}
+            <a href="/albums{$album_owner->getId()}">{_photo}</a>
+        {/if}
+    {else}
+        <a href="{$owner->getURL()}">{_photo}</a>
+    {/ifset}
+{/block}
+
+{block content}
+    <div class="media-page">
+
+        <div class="media-page-actions">
+            <a href="{$owner->getURL()}" class="media-page-author-block">
+                <img class="cCompactAvatars" src="{$owner->getAvatarURL('miniscule')}" alt="" />
+                <b>{$owner->getCanonicalName()}</b>
+            </a>
+
+            {* id="_photoDelete" — хук удаления без перезагрузки. *}
+            <div n:if="isset($thisUser) && $thisUser->getId() === $photo->getOwner()->getId()">
+                <a href="/photo{$photo->getPrettyId()}/edit" class="profile_link">{_edit}</a>
+                <a id="_photoDelete" href="/photo{$photo->getPrettyId()}/delete" class="profile_link">{_delete}</a>
+            </div>
+
+            <a n:if="isset($thisUser) && $thisUser->getId() != $photo->getOwner()->getId()"
+               class="profile_link" href="javascript:reportPhoto({$photo->getId()})">{_report}</a>
+
+            <a n:if="isset($thisUser)" class="profile_link"
+               onclick="javascript:repost({$photo->getPrettyId()}, 'photo')">{_share}</a>
+        </div>
+
+        <div class="media-page-media">
+            <img src="{$photo->getURLBySizeId('large')}" alt="{$photo->getDescription()}" />
+        </div>
+
+        <div class="media-page-description">
+            <p n:if="!empty($photo->getDescription())">{$photo->getDescription()}</p>
+
+            <div class="upload_time">
+                {_info_upload_date}: {$photo->getPublicationTime()}
+
+                {* Лайк. Настоящая ссылка с CSRF-хешем. *}
+                {if isset($thisUser)}
+                    {var $liked = $photo->hasLikeFrom($thisUser)}
+                    {var $likesCount = $photo->getLikesCount()}
+
+                    <span class="like_wrap">
+                        <a href="/photo{$photo->getPrettyId()}/like?hash={rawurlencode($csrfToken)}"
+                           class="post-like-button" data-liked="{(int) $liked}" data-likes="{$likesCount}"
+                           data-id="{$photo->getPrettyId()}" data-type="photo">
+                            <span class="heart" id="{if $liked}liked{/if}"></span>
+                            <span class="likeCnt">{if $likesCount > 0}{$likesCount}{/if}</span>
+                        </a>
+                    </span>
+                    {* Прижата к правому краю строки (margin-left: auto — .upload_time это flex-строка). *}
+                    <a href="{$photo->getURL()}" class="profile_link" target="_blank" style="margin-left: auto;">{_"open_original"}</a>
+                {/if}
+            </div>
+        </div>
+
+        <div class="media-page-comments">
+            {include "../components/comments.xml", comments => $comments, count => $cCount,
+                     page => $cPage, model => "photos", parent => $photo, custom_id => 999}
+        </div>
+
+    </div>
+{/block}

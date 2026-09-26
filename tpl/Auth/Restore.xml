@@ -1,0 +1,30 @@
+{*  =========================================================
+    RESTORE — запрос восстановления доступа (/restore).
+
+    POST с полями login и hash (CSRF).
+    ========================================================= *}
+
+{extends "../@layout.xml"}
+
+{block title}{_access_recovery}{/block}
+{block header}{_page_access_recovery}{/block}
+
+{block content}
+    <h4>{_access_recovery}</h4>
+    <p>{_access_recovery_info}</p>
+
+    <form class="form" method="POST" enctype="multipart/form-data">
+
+        <div class="form-field">
+            <label class="form-label" for="login">{_email}</label>
+            <input class="form-input" id="login" type="text" name="login" required />
+        </div>
+
+        <input type="hidden" name="hash" value="{$csrfToken}" />
+
+        <div class="form-actions">
+            <input type="submit" value="{_reset_password}" class="button button-primary" />
+        </div>
+
+    </form>
+{/block}

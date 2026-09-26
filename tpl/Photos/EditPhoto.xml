@@ -1,0 +1,30 @@
+{*  =========================================================
+    EDIT PHOTO — изменение описания фото (/photo{id}/edit).
+
+    POST с полями desc и hash (CSRF).
+    ========================================================= *}
+
+{extends "../@layout.xml"}
+
+{block title}{_edit_photo}{/block}
+
+{block header}
+    {_photo}
+{/block}
+
+{block content}
+    <form class="form" method="post" enctype="multipart/form-data">
+
+        <div class="form-field">
+            <label class="form-label" for="desc">{_description}</label>
+            <textarea class="form-input" id="desc" name="desc">{$photo->getDescription()}</textarea>
+        </div>
+
+        <input type="hidden" name="hash" value="{$csrfToken}" />
+
+        <div class="form-actions">
+            <input type="submit" class="button button-primary" name="submit" value="{_save}" />
+        </div>
+
+    </form>
+{/block}

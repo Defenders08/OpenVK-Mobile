@@ -1,0 +1,36 @@
+{*  ---------------------------------------------------------
+    PAGINATOR — постраничная навигация
+
+    $conf — объект с полями page, count, perPage и
+    необязательными space, tidy, atTop, atBottom.
+    Его собирают страницы (например, @listView.xml).
+
+    Ссылки строятся из текущего $_GET с подменой параметра `p`,
+    чтобы не потерять фильтры (?act=, ?section=, ?q= и т.д.).
+    Эту конструкцию менять нельзя.
+    --------------------------------------------------------- *}
+
+{var $space = $conf->space ?? 3}
+{var $pageCount = ceil($conf->count / $conf->perPage)}
+
+{* Если страница одна — пагинатор не нужен. *}
+<nav n:if="!($conf->page === 1 && $conf->count <= $conf->perPage)" class="paginator">
+
+    {* В начало *}
+    <a n:if="$conf->page > $space"
+       n:attr="class => ($conf->page === 1 ? 'active')"
+       href="?{http_build_query(array_merge($_GET, ['p' => 1]), 'k', '&', \PHP_QUERY_RFC3986)}">&laquo;</a>
+
+    {* Соседние страницы *}
+    {for $j = $conf->page - ($space - 1); $j <= $conf->page + ($space - 1); $j++}
+        <a n:if="$j > 0 && $j <= $pageCount"
+           n:attr="class => ($conf->page === $j ? 'active')"
+           href="?{http_build_query(array_merge($_GET, ['p' => $j]), 'k', '&', \PHP_QUERY_RFC3986)}">{$j}</a>
+    {/for}
+
+    {* В конец *}
+    <a n:if="$conf->page <= $pageCount - $space"
+       n:attr="class => ($conf->page === $pageCount ? 'active')"
+       href="?{http_build_query(array_merge($_GET, ['p' => $pageCount]), 'k', '&', \PHP_QUERY_RFC3986)}">&raquo;</a>
+
+</nav>

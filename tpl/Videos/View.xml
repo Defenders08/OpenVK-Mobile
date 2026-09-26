@@ -1,0 +1,114 @@
+{*  =========================================================
+    VIDEO VIEW — страница видео (/video{owner}_{id}).
+
+    $video, $user, $comments, $cCount, $cPage.
+
+    getType() === 0 — файл загружен на инстанс, играет штатный
+    плеер (class="bsdn"). Иначе это внешнее видео и движок сам
+    отдаёт готовый embed-код через getVideoDriver().
+    Класс "bsdn" удалять нельзя — по нему плеер находит блок.
+    ========================================================= *}
+
+{extends "../@layout.xml"}
+
+{block title}{$video->getName()}{/block}
+
+{block headIncludes}
+    {var $vidDesc = $video->getDescription()}
+    {var $vidDescTrimmed = !is_null($vidDesc) && mb_strlen($vidDesc) > 200 ? mb_substr($vidDesc, 0, 197) . '...' : $vidDesc}
+    {var $thumbUrl = $video->getThumbnailURL()}
+    {var $vidDims = $video->getDimensions()}
+
+    <meta property="og:title" content="{$video->getName()} — {$instance_name}" />
+    <meta property="og:url" content="{$baseUrl}/video{$video->getPrettyId()}" />
+    <meta n:if="!empty($thumbUrl)" property="og:image" content="{$thumbUrl}" />
+    <meta n:if="!empty($vidDescTrimmed)" property="og:description" content="{$vidDescTrimmed}" />
+    <meta property="og:type" content="video.other" />
+    <meta n:if="$video->getType() === 0" property="og:video" content="{$video->getURL()}" />
+    <meta n:if="!is_null($vidDims) && $video->getType() === 0" property="og:video:width" content="{$vidDims[0]}" />
+    <meta n:if="!is_null($vidDims) && $video->getType() === 0" property="og:video:height" content="{$vidDims[1]}" />
+    <meta n:if="$video->getType() === 0" property="og:video:type" content="video/mp4" />
+    <meta name="twitter:title" content="{$video->getName()} — {$instance_name}" />
+    <meta n:if="!empty($thumbUrl)" name="twitter:image" content="{$thumbUrl}" />
+    <meta name="twitter:card" content="summary_large_image" />
+{/block}
+
+{block header}
+    <a href="/videos{$user->getId()}">{_video}</a>
+{/block}
+
+{block content}
+    <div class="media-page">
+
+        <div class="media-page-actions">
+            <a href="{$user->getURL()}" class="media-page-author-block">
+                <img class="cCompactAvatars" src="{$user->getAvatarURL('miniscule')}" alt="" />
+                <b>{$user->getCanonicalName()}</b>
+            </a>
+
+            {* id="_videoDelete" — хук удаления без перезагрузки. *}
+            <div n:if="isset($thisUser) && $thisUser->getId() === $user->getId()">
+                <a href="/video{$video->getPrettyId()}/edit" class="profile_link">{_edit}</a>
+                <a id="_videoDelete" href="/video{$video->getPrettyId()}/remove" class="profile_link">{_delete}</a>
+            </div>
+
+            <a n:if="isset($thisUser)" class="profile_link"
+               onclick="javascript:repost({$video->getPrettyId()}, 'video')">{_share}</a>
+
+            {if isset($thisUser) && $thisUser->getId() != $video->getOwner()->getId()}
+                {var $canReport = true}
+            {/if}
+
+            <a n:if="$canReport ?? false" class="profile_link"
+               href="javascript:reportVideo({$video->getId()})">{_report}</a>
+
+            {* Скачать можно только загруженные на инстанс файлы. *}
+            <a n:if="$video->getType() == 0" href="{$video->getURL()}" download="" class="profile_link">{_download_video}</a>
+        </div>
+
+        <div class="media-page-media">
+            {if $video->getType() === 0}
+                <div class="bsdn" data-name="{$video->getName()}" data-author="{$user->getCanonicalName()}">
+                    <video src="{$video->getURL()}"></video>
+                </div>
+            {else}
+                {var $driver = $video->getVideoDriver()}
+                {if !$driver}
+                    {_unknown_video}
+                {else}
+                    {$driver->getEmbed()|noescape}
+                {/if}
+            {/if}
+        </div>
+
+        <div class="media-page-description">
+            <p><b>{$video->getName()}</b></p>
+            <p n:if="!empty($video->getDescription())">{$video->getDescription()}</p>
+
+            <div class="upload_time">
+                {_info_upload_date}: {$video->getPublicationTime()}
+
+                {if isset($thisUser)}
+                    {var $liked = $video->hasLikeFrom($thisUser)}
+                    {var $likesCount = $video->getLikesCount()}
+
+                    <span class="like_wrap">
+                        <a href="/video{$video->getPrettyId()}/like?hash={rawurlencode($csrfToken)}"
+                           class="post-like-button" data-liked="{(int) $liked}" data-likes="{$likesCount}"
+                           data-id="{$video->getPrettyId()}" data-type="video">
+                            <span class="heart" id="{if $liked}liked{/if}"></span>
+                            <span class="likeCnt">{if $likesCount > 0}{$likesCount}{/if}</span>
+                        </a>
+                    </span>
+                {/if}
+            </div>
+        </div>
+
+        {* Якорь #comments используется ссылками из списков видео. *}
+        <div class="media-page-comments" id="comments">
+            {include "../components/comments.xml", comments => $comments, count => $cCount,
+                     page => $cPage, model => "videos", parent => $video}
+        </div>
+
+    </div>
+{/block}

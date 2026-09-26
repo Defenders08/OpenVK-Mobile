@@ -1,0 +1,37 @@
+{*  ---------------------------------------------------------
+    GROUP — карточка сообщества (или пользователя).
+
+    $group  — объект Club или User;
+    $isUser — true, если это пользователь: тогда берём
+              getCanonicalName() вместо getName(),
+              и не показываем число участников.
+    --------------------------------------------------------- *}
+
+{block content}
+    <div class="list-item">
+
+        {* Аватар *}
+        <div class="list-item-cover">
+            <a href="{$group->getURL()}">
+                <img src="{$group->getAvatarURL('normal')}" width="75" alt="" />
+            </a>
+        </div>
+
+        {* Основная информация. id="basicInfo" оставлен: его
+           используют другие шаблоны OpenVK. *}
+        <div class="list-item-info" id="basicInfo">
+            <div class="form-field">
+                <span class="form-label">{_name}:</span>
+                <a href="{$group->getURL()}">{!$isUser ? $group->getName() : $group->getCanonicalName()}</a>
+                <img n:if="$group->isVerified()" class="name-checkmark"
+                     src="/assets/packages/static/openvk/img/checkmark.png" alt="" />
+            </div>
+
+            <div n:if="!$isUser" class="form-field">
+                <span class="form-label">{_size}:</span>
+                <a href="/club{$group->getId()}/followers">{tr("participants", $group->getFollowersCount())}</a>
+            </div>
+        </div>
+
+    </div>
+{/block}

@@ -1,0 +1,99 @@
+{*  =========================================================
+    EVENTS — встречи пользователя (/events{N}, ?act=managed).
+
+    Тот же вид, что у групп (User/Groups.xml), плюс даты
+    начала/окончания. Вступление/выход — /setSub/club.
+    ========================================================= *}
+
+{extends "../@listView.xml"}
+
+{var $iterator = $user->getEvents($page, $admin)}
+{var $count    = $user->getEventsCount($admin)}
+{var $isOwner  = isset($thisUser) && $user->getId() === $thisUser->getId()}
+
+{block noscroll}{/block}
+
+{block title}{_meetings}{/block}
+
+{block header}
+    {if $isOwner}
+        {_my_events}
+    {else}
+        <a href="{$user->getURL()}">{$user->getCanonicalName()}</a> &raquo; {_meetings}
+    {/if}
+{/block}
+
+{block tabs}
+    {if $isOwner}
+        <div n:attr="id => ($admin ? null : 'activetabs')" class="tab">
+            <a n:attr="id => ($admin ? null : 'act_tab_a')" href="/events{$user->getId()}">{_meetings}
+                <em n:if="$user->getEventsCount() > 0">{$user->getEventsCount()}</em></a>
+        </div>
+        <div n:attr="id => ($admin ? 'activetabs' : null)" class="tab">
+            <a n:attr="id => ($admin ? 'act_tab_a' : null)" href="/events{$user->getId()}?act=managed">{_managed}
+                <em n:if="$user->getEventsCount(true) > 0">{$user->getEventsCount(true)}</em></a>
+        </div>
+    {/if}
+{/block}
+
+{block size}
+    <div n:if="$isOwner" id="groups_graybar" class="vkx-search">
+        <form action="/search" id="search_box" method="get">
+            <input name="section" type="hidden" value="events" />
+            <input name="q" type="text" class="header_search_input" value="" placeholder="{_search_by_events}" />
+        </form>
+    </div>
+
+    <a n:if="$isOwner" class="vkx-create" href="/events_create">
+        <span class="vkx-create-ico">
+            <svg viewBox="0 0 16 16" width="20" height="20" fill="currentColor"><path d="M8 2a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5h-4.5a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 8 2z"/></svg>
+        </span>
+        <span class="vkx-create-text"><b>{_create_event}</b></span>
+        <svg class="vkx-create-arrow" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg>
+    </a>
+
+    <div class="summaryBar">
+        <div class="summary">
+            {if $isOwner}{tr("events_list", $count)}{else}{tr("events", $count)}{/if}
+        </div>
+    </div>
+{/block}
+
+{block link|strip|stripHtml}{$x->getURL()}{/block}
+
+{block preview}
+    <img class="vkx-av" src="{$x->getAvatarUrl('miniscule')}" alt="" loading="lazy" />
+{/block}
+
+{block name}
+    {$x->getName()}
+    <img n:if="$x->isVerified()" class="name-checkmark"
+         src="/assets/packages/static/openvk/img/checkmark.png" alt="" />
+{/block}
+
+{block description}
+    <div n:if="$x->getDescription()" class="vkx-clamp">{$x->getDescription()}</div>
+    <div class="vkx-muted">{_event_start_date}: {$x->getStartDate()->relative(-1)}</div>
+    <div n:if="!is_null($x->getFinishDate())" class="vkx-muted">{_event_finish_date}: {$x->getFinishDate()->relative(-1)}</div>
+    <div class="vkx-muted"><a href="/club{$x->getId()}/followers">{tr("participants", $x->getFollowersCount())}</a></div>
+{/block}
+
+{block actions}
+    {if isset($thisUser)}
+        {if $x->getSubscriptionStatus($thisUser)}
+            <form class="profile_link_form" action="/setSub/club" method="post">
+                <input type="hidden" name="act" value="rem" />
+                <input type="hidden" name="id" value="{$x->getId()}" />
+                <input type="hidden" name="hash" value="{$csrfToken}" />
+                <input type="submit" class="profile_link" value="{_leave_community}" />
+            </form>
+        {else}
+            <form class="profile_link_form" action="/setSub/club" method="post">
+                <input type="hidden" name="act" value="add" />
+                <input type="hidden" name="id" value="{$x->getId()}" />
+                <input type="hidden" name="hash" value="{$csrfToken}" />
+                <input type="submit" class="profile_link" value="{_join_community}" />
+            </form>
+        {/if}
+    {/if}
+{/block}

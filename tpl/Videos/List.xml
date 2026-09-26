@@ -1,0 +1,59 @@
+{*  =========================================================
+    VIDEOS LIST — список видео (/videos{N}).
+
+    $videos, $paginatorConf, $user. Наследует @listView.xml.
+
+    id="videoOpen" + data-id — хук штатного JS (открывает видео
+    поверх страницы). Обязателен и на превью, и на названии.
+    ========================================================= *}
+
+{extends "../@listView.xml"}
+
+{var $iterator = $videos}
+{var $count = $paginatorConf->count}
+{var $page = $paginatorConf->page}
+{var $canUpload = isset($thisUser) && $thisUser->getId() == $user->getId() && !\OPENVK_ROOT_CONF['openvk']['preferences']['videos']['disableUploading']}
+
+{block title}{_videos} {$user->getCanonicalName()}{/block}
+
+{block header}
+    {_videos}
+{/block}
+
+{block tabs}
+    <div id="activetabs" class="tab">
+        <a id="act_tab_a" href="/videos{$user->getId()}">{_videos} <em>{$count}</em></a>
+    </div>
+    {* Загрузку видео администратор может отключить в конфиге. *}
+    <a n:if="$canUpload" class="button" href="/videos/upload">{_upload_video}</a>
+{/block}
+
+{block size}{/block}
+{block actions}{/block}
+
+{block before_content}
+    <div class="summaryBar">
+        <div class="summary">{tr("videos", $count)}</div>
+    </div>
+{/block}
+
+{block link|strip|stripHtml}/video{$x->getPrettyId()}{/block}
+
+{block preview}
+    <span id="videoOpen" data-id="{$x->getPrettyId()}" class="vkx-thumb">
+        <img src="{$x->getThumbnailURL()}" alt="" loading="lazy" />
+        <span n:if="$x->getLength()" class="vkx-dur">{$x->getFormattedLength()}</span>
+    </span>
+{/block}
+
+{block name}
+    <span id="videoOpen" data-id="{$x->getPrettyId()}" class="vkx-video-title">{$x->getName()}</span>
+{/block}
+
+{block description}
+    <div n:if="$x->getDescription()" class="vkx-clamp">{$x->getDescription()}</div>
+    <div class="vkx-muted">
+        {_video_uploaded} {$x->getPublicationTime()}
+        <a n:if="$x->getCommentsCount() > 0" href="/video{$x->getPrettyId()}#comments">&bull; {_comments} ({$x->getCommentsCount()})</a>
+    </div>
+{/block}

@@ -1,0 +1,10 @@
+{extends "../@layout.xml"}
+{block title}Sandbox{/block}
+
+{block header}
+    {_sandbox_for_developers}
+{/block}
+
+{block content}
+    https://www.youtube.com/watch?v=ektb0vLIaqI
+{/block}

@@ -1,0 +1,29 @@
+{*  =========================================================
+    Audio/tabs.xml — навигация раздела аудиозаписей.
+
+    Оригинальный OpenVK рисует здесь вертикальный сайдбар
+    (.verticalGrayTabsWrapper), а тема глобально его прячет
+    (см. _ui.xml, п.8 — .verticalGrayTabsWrapper{display:none}),
+    как и на других страницах с этим виджетом.
+
+    Здесь вместо него — горизонтальная лента .tabs-bar/.tab-item
+    (тот же компонент, что и на остальных страницах темы).
+    Все ссылки, условия видимости и переменные Presenter'а
+    ($thisUser, $mode, $isMy, $ownerId, $club, $isMyClub,
+    $friendsAudios) сохранены без изменений.
+    ========================================================= *}
+<nav class="tabs-bar" n:if="isset($thisUser)">
+    <a class="tab-item {if $mode === 'list' && $isMy}selected{/if}" href="/audios{$thisUser->getId()}">{_my_music}</a>
+    <a class="tab-item {if $mode === 'uploaded'}selected{/if}" href="/audios/uploaded">{_my_audios_small_uploaded}</a>
+    <a class="tab-item {if $mode === 'playlists' && $ownerId == $thisUser->getId()}selected{/if}" href="/playlists{$thisUser->getId()}">{_my_playlists}</a>
+    <a class="tab-item {if $mode === 'new'}selected{/if}" href="/search?section=audios">{_audio_new}</a>
+    <a class="tab-item {if $mode === 'popular'}selected{/if}" href="/search?section=audios&order=listens">{_audio_popular}</a>
+
+    {if !$isMy && $mode !== 'popular' && $mode !== 'new' && $mode != 'alone_audio' && $mode != 'uploaded'}
+        <a class="tab-item {if $mode === 'list'}selected{/if}" href="/audios{$ownerId}">{if $ownerId > 0}{_music_user}{else}{_music_club}{/if}</a>
+        <a class="tab-item" href="/player/upload?gid={abs($ownerId)}" n:if="isset($club) && $club->canUploadAudio($thisUser)">{_upload_audio}</a>
+        <a class="tab-item {if $mode === 'playlists' && $ownerId != $thisUser->getId()}selected{/if}" href="/playlists{$ownerId}" n:if="isset($ownerId)">{if $ownerId > 0}{_playlists_user}{else}{_playlists_club}{/if}</a>
+        <a class="tab-item" href="/audios/newPlaylist{if $isMyClub}?gid={abs($ownerId)}{/if}" n:if="$isMyClub">{_new_playlist}</a>
+    {/if}
+</nav>
+

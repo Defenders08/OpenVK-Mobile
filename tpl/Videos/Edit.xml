@@ -1,0 +1,37 @@
+{*  =========================================================
+    VIDEO EDIT — изменение видео (/video{id}/edit).
+
+    POST с полями name, desc, hash (CSRF).
+    ========================================================= *}
+
+{extends "../@layout.xml"}
+
+{block title}{_change_video}{/block}
+
+{block header}
+    <a href="/video{$video->getPrettyId()}">{_change_video}</a>
+{/block}
+
+{block content}
+    <h4>{_change_video}</h4>
+
+    <form class="form" method="post" enctype="multipart/form-data">
+
+        <div class="form-field">
+            <label class="form-label" for="name">{_name}</label>
+            <input class="form-input" id="name" type="text" name="name" value="{$video->getName()}" />
+        </div>
+
+        <div class="form-field">
+            <label class="form-label" for="desc">{_description}</label>
+            <textarea class="form-input" id="desc" name="desc">{$video->getDescription()}</textarea>
+        </div>
+
+        <input type="hidden" name="hash" value="{$csrfToken}" />
+
+        <div class="form-actions" style="border-bottom: 1px solid var(--color-border-list);">
+            <input type="submit" class="button button-primary" name="submit" value="{_save}" />
+        </div>
+
+    </form>
+{/block}

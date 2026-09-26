@@ -1,0 +1,14 @@
+{extends "../@layout.xml"}
+{block title}{_information}{/block}
+
+{block header}
+    {_information}
+{/block}
+
+{block content}
+    <center style="background: white;border: var(--color-border) solid 1px;">
+        <span style="color: var(--color-text-muted);margin: 60px 0;display: block;">
+            {_profile_not_found_text}
+        </span>
+    </center>
+{/block}

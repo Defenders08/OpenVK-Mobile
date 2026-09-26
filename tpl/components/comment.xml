@@ -1,0 +1,145 @@
+{*  ---------------------------------------------------------
+    COMMENT — один комментарий.
+
+    $comment — реальный объект Comment OpenVK.
+
+    Необязательные параметры включения:
+      $compact          — компактный вид (под постом в микроблоге);
+      $timeOnly         — показывать только дату, без действий;
+      $correctLink      — вести дату на страницу объекта;
+      $no_reply_button  — скрыть кнопку «Ответить».
+
+    ХУКИ JS (al_comments.js, al_wall.js) — НЕ УДАЛЯТЬ:
+      data-id="1_{id}", data-comment-id, data-owner-id,
+      data-from-group, data-post-id — идентификация комментария;
+      id="_comment{id}" и <a name="cid={id}"> — якоря;
+      id="text{id}" и класс really_text — редактирование текста;
+      div.post-edit — сюда подставляется форма редактирования;
+      id="_ajaxDelete"          — удаление без перезагрузки;
+      id="editPost" + data-id   — открыть редактор;
+      class="comment-reply"     — ответить;
+      .post-like-button + data-likes/data-id/data-type,
+      .heart (id="liked"), .likeCnt — лайки;
+      data-localized-nsfw-text  — текст предупреждения 18+.
+
+    Классы "post comment" оставлены вместе: "post" ожидает
+    штатный JS, "comment" — наш CSS.
+    --------------------------------------------------------- *}
+
+{var $author = $comment->getOwner()}
+{var $Club = openvk\Web\Models\Entities\Club::class}
+{var $likesCount = $comment->getLikesCount()}
+{var $target = $comment->getTarget()}
+{var $postId = $target instanceof \openvk\Web\Models\Entities\Post ? $target->getId() : NULL}
+
+{* значения по умолчанию *}
+{var $timeOnly = $timeOnly ?? false}
+{var $correctLink = $correctLink ?? false}
+
+<a name="cid={$comment->getId()}"></a>
+
+<article class="post comment"
+         data-id="1_{$comment->getId()}"
+         id="_comment{$comment->getId()}"
+         data-comment-id="{$comment->getId()}"
+         data-owner-id="{$author->getId()}"
+         data-from-group="{$author instanceof $Club ? 'true' : 'false'}"
+         n:attr="data-post-id => $postId">
+
+    {* Аватар автора *}
+    <div class="comment-avatar">
+        <a href="{$author->getURL()}">
+            <img src="{$author->getAvatarURL('miniscule')}" width="30" class="cCompactAvatars post-avatar" alt="" />
+        </a>
+    </div>
+
+    <div class="comment-body">
+
+        {* Автор *}
+        <div class="comment-author post-author">
+            <a href="{$author->getURL()}"><b class="post-author-name">{$author->getCanonicalName()}</b></a>
+            <img n:if="$author->isVerified()" class="name-checkmark"
+                 src="/assets/packages/static/openvk/img/checkmark.png" alt="" />
+        </div>
+
+        {* Содержимое *}
+        <div class="comment-content post-content" id="{$comment->getId()}">
+
+            <div class="text" id="text{$comment->getId()}">
+                <span class="really_text">{$comment->getText()|noescape}</span>
+
+                {*  Вложения. Размеры плиток считает сам OpenVK
+                    (getChildrenWithLayout), поэтому inline-стили
+                    здесь обязательны — это данные, а не дизайн. *}
+                {var $attachmentsLayout = $comment->getChildrenWithLayout(288)}
+
+                <div n:ifcontent class="attachments attachments_b attachments-tiles"
+                     style="height: {$attachmentsLayout->height|noescape}; width: {$attachmentsLayout->width|noescape};">
+                    <div class="attachment" n:foreach="$attachmentsLayout->tiles as $attachment"
+                         style="float: {$attachment[3]|noescape}; width: {$attachment[0]|noescape}; height: {$attachment[1]|noescape};"
+                         data-localized-nsfw-text="{_nsfw_warning}">
+                        {include "attachment.xml", attachment => $attachment[2], parent => $comment,
+                                 parentType => "comment", tilesCount => sizeof($attachmentsLayout->tiles)}
+                    </div>
+                </div>
+
+                <div n:ifcontent class="attachments attachments_m">
+                    <div class="attachment" n:foreach="$attachmentsLayout->extras as $attachment">
+                        {include "attachment.xml", attachment => $attachment, post => $comment}
+                    </div>
+                </div>
+            </div>
+
+            {* Действия над комментарием *}
+            <div n:if="isset($thisUser) && !($compact ?? false)" class="comment-actions post-menu">
+
+                <a href="{if $correctLink}{$comment->getTargetURL()}{/if}#_comment{$comment->getId()}" class="date">
+                    {$comment->getPublicationTime()}
+                    <span n:if="$comment->getEditTime()" class="edited editedMark">({_edited_short})</span>
+                </a>
+
+                <a n:if="$comment->getReplyToId() !== null"
+                   href="{$comment->getTargetURL()}#_comment{$comment->getReplyToId()}">{_in_reply}</a>
+
+                {if !$timeOnly}
+                    <a n:if="$comment->canBeDeletedBy($thisUser)"
+                       href="/comment{$comment->getId()}/delete" id="_ajaxDelete">{_delete}</a>
+
+                    <a n:if="$comment->canBeEditedBy($thisUser)"
+                       id="editPost" data-id="{$comment->getId()}">{_edit}</a>
+
+                    <a n:if="!$no_reply_button" class="comment-reply">{_reply}</a>
+
+                    <a n:if="$thisUser->getId() != $author->getRealId()"
+                       href="javascript:reportComment({$comment->getId()})">{_report}</a>
+
+                    {* Лайк. Визуально — та же кнопка-«пилюля», что и у лайка
+                       поста (components/post.xml: .post-btn.post-like-button),
+                       прижата вправо через CSS (.comment-actions .post-btn).
+                       Ссылка настоящая (работает и без JS), CSRF-хеш обязателен. *}
+                    {var $isLiked = $comment->hasLikeFrom($thisUser)}
+                    <a class="post-btn post-like-button {if $isLiked}active{/if}"
+                       href="/comment{$comment->getId()}/like?hash={rawurlencode($csrfToken)}"
+                       data-likes="{$likesCount}"
+                       data-id="1_{$comment->getPrettyId()}"
+                       data-type="comment">
+                        <span class="post-icon heart" n:attr="id => $isLiked ? liked"></span>
+                        <span class="likeCnt">{if $likesCount > 0}{$likesCount}{/if}</span>
+                    </a>
+                {/if}
+
+            </div>
+
+            {* Компактный вид: только дата. *}
+            <div n:if="$compact ?? false" class="comment-actions post-menu">
+                <a href="#_comment{$comment->getId()}" class="date">{$comment->getPublicationTime()}</a>
+            </div>
+
+        </div>
+
+        {* Пустой контейнер для формы редактирования (JS). *}
+        <div class="post-edit"></div>
+
+    </div>
+
+</article>

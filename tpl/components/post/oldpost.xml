@@ -1,0 +1,246 @@
+{*  ---------------------------------------------------------
+    OLDPOST — запись стены в «классическом» виде.
+
+    $post — реальный объект Post OpenVK.
+
+    Необязательные параметры включения (их передают страницы):
+      $compact, $onWallOf, $bigWall, $nestedLevel, $suggestion,
+      $feedIgnoreButton, $forceNoEditLink, $forceNoDeleteLink,
+      $forceNoPinLink, $forceNoCommentsLink, $forceNoShareLink,
+      $forceNoLike.
+
+    ХУКИ JS (al_wall.js, al_comments.js, al_feed.js) — НЕ УДАЛЯТЬ:
+      data-id="{prettyId}" на корневом элементе;
+      class="post" (по нему JS ищет запись);
+      id="{prettyId}" на .post-content и id="text{prettyId}";
+      span.really_text + data-text — редактирование текста;
+      div.post-edit — контейнер для формы редактирования;
+      id="editPost", id="_wallDelete", id="__ignoreSomeoneFeed",
+      id="publish_post", id="decline_post";
+      .post-share-button + id="reposts{id}" / "repostsCount{id}";
+      .post-like-button + data-liked/data-likes/data-id/data-type,
+      .heart (id="liked"), .likeCnt;
+      .client_app + data-app-tag/name/url/img — значок клиента;
+      .mention + data-mention-ref;
+      data-localized-nsfw-text — текст предупреждения 18+;
+      onclick="expandText(this)" и openGeo(...) — штатные функции.
+
+    Все ссылки (лайк, закрепление, архив, удаление) — настоящие
+    маршруты OpenVK с CSRF-хешем, они работают и без JS.
+    --------------------------------------------------------- *}
+
+{var $author = $post->getOwner()}
+{var $platform = $post->getPlatform()}
+{var $platformDetails = $post->getPlatformDetails()}
+{var $wallOwner = $post->getWallOwner()}
+{var $likesCount = $post->getLikesCount()}
+{var $repostsCount = $post->getRepostCount()}
+{var $commentsCount = $post->getCommentsCount()}
+{var $canBePinned = $post->canBePinnedBy($thisUser ?? NULL)}
+{var $canBeDeleted = $post->canBeDeletedBy($thisUser ?? NULL)}
+{var $canBeArchived = $post->canBeArchivedBy($thisUser ?? NULL)}
+
+{* Системные записи «удалил страницу» / «сменил аватар». *}
+{if $post->isDeactivationMessage() && $post->getText()}
+    {var $deac = "post_deact"}
+{else}
+    {var $deac = "post_deact_silent"}
+{/if}
+
+{var $compact = isset($compact) ? true : false}
+
+{* Длинный текст сворачивается: это делает штатный JS. *}
+{var $bigText = mb_strlen($post->getText()) > 520 || substr_count($post->getText(), "\n") + 1 > 10}
+
+<article data-id="{$post->getPrettyId()}" n:class="post, post_oldschool, $post->isExplicit() ? post-nsfw">
+
+    {* Аватар автора *}
+    <div class="post-author-ava">
+        <a class="post-author-url" href="{$author->getURL()}">
+            <img src="{$author->getAvatarURL('miniscule')}" class="post-avatar" width="50" loading="lazy" alt="" />
+            <span n:if="!$post->isPostedOnBehalfOfGroup() && !$compact && $author->isOnline()" class="post-online">{_online}</span>
+        </a>
+    </div>
+
+    <div class="post-body">
+
+        {* ---------- ШАПКА: автор, что он сделал, дата ---------- *}
+        <header class="post-header post-author">
+
+            <a href="{$author->getURL()}"><b class="post-author-name">{$author->getCanonicalName()}</b></a>
+            <img n:if="$author->isVerified()" class="name-checkmark"
+                 src="/assets/packages/static/openvk/img/checkmark.png" alt="" />
+
+            {* Формулировка «пишет / удалил страницу / обновил фото»
+               зависит от рода автора и типа записи. *}
+            {if $post->isDeactivationMessage() && !$post->isPostedOnBehalfOfGroup()}
+                {$author->isFemale() ? tr($deac . "_f") : tr($deac . "_m")}
+            {elseif $post->isDeactivationMessage() && $post->isPostedOnBehalfOfGroup()}
+                {tr($deac . "_g")}
+            {elseif $post->isUpdateAvatarMessage() && !$post->isPostedOnBehalfOfGroup()}
+                {$author->isFemale() ? tr("upd_f") : tr("upd_m")}
+            {elseif $post->isUpdateAvatarMessage() && $post->isPostedOnBehalfOfGroup()}
+                {tr("upd_g")}
+            {elseif $post->isPostedOnBehalfOfGroup()}
+                {_post_writes_g}
+            {else}
+                {if $author->isFemale()}{_post_writes_f}
+                {elseif $author->isNeutral()}{_post_writes_g}
+                {else}{_post_writes_m}{/if}
+            {/if}
+
+            {* «на стене у ...» — только в ленте, где записи с разных стен. *}
+            {if ($onWallOf ?? false) && !$post->isPostedOnBehalfOfGroup() && $post->getOwnerPost() !== $post->getTargetWall()}
+                <a href="{$wallOwner->getURL()}" class="mention" data-mention-ref="{$post->getTargetWall()}">
+                    {if isset($thisUser) && $thisUser->getId() === $post->getTargetWall()}
+                        {_post_on_your_wall}
+                    {elseif $wallOwner instanceof \openvk\Web\Models\Entities\Club}
+                        {tr("post_on_group_wall", ovk_proc_strtr($wallOwner->getName(), 52))}
+                    {else}
+                        {tr("post_on_user_wall", $wallOwner->getMorphedName("genitive", false, false))}
+                    {/if}
+                </a>
+            {/if}
+
+            <a href="{if $suggestion ?? false}javascript:void(0){else}/wall{$post->getPrettyId()}{/if}" class="date">
+                {$post->getPublicationTime()}
+                <span n:if="$post->getEditTime()" class="editedMark">({_edited_short})</span>
+                {if $post->isPinned()}, {_pinned}{/if}
+            </a>
+
+            {* Значок приложения, из которого опубликована запись. *}
+            <a n:if="!empty($platform)" class="client_app"
+               data-app-tag="{$platform}" data-app-name="{$platformDetails['name']}"
+               data-app-url="{$platformDetails['url']}" data-app-img="{$platformDetails['img']}">
+                <img src="/assets/packages/static/openvk/img/app_icons_mini/{$post->getPlatform(true)}.svg" alt="" />
+            </a>
+
+        </header>
+
+        {* ---------- СОДЕРЖИМОЕ ---------- *}
+        <div class="post-content" id="{$post->getPrettyId()}" data-localized-nsfw-text="{_nsfw_warning}">
+
+            <div class="text" id="text{$post->getPrettyId()}">
+                <span data-text="{$post->getText(false)}" class="really_text {if $bigText}collapsed_text{/if}">
+                    {$post->getText()|noescape}
+                </span>
+                <a n:if="$bigText" class="collapse_button" onclick="javascript:expandText(this)">{_show_more}</a>
+
+                {*  Вложения. Ширину раскладки считает сам OpenVK.
+                    $bigWall и $nestedLevel приходят от страницы. *}
+                {var $width = ($bigWall ?? false) ? 550 : 320}
+                {if isset($nestedLevel)}
+                    {var $width = $width - 70 * $nestedLevel}
+                {/if}
+                {var $attachmentsLayout = $post->getChildrenWithLayout($width)}
+
+                <div n:ifcontent class="attachments attachments_b attachments-tiles"
+                     style="height: {$attachmentsLayout->height|noescape}; width: {$attachmentsLayout->width|noescape};">
+                    <div class="attachment" n:foreach="$attachmentsLayout->tiles as $attachment"
+                         style="float: {$attachment[3]|noescape}; width: {$attachment[0]|noescape}; height: {$attachment[1]|noescape};">
+                        {include "../attachment.xml", attachment => $attachment[2], parent => $post,
+                                 parentType => "post", tilesCount => sizeof($attachmentsLayout->tiles)}
+                    </div>
+                </div>
+
+                <div n:ifcontent class="attachments attachments_m">
+                    <div class="attachment" n:foreach="$attachmentsLayout->extras as $attachment">
+                        {include "../attachment.xml", attachment => $attachment}
+                    </div>
+                </div>
+            </div>
+
+            {* Предложенная запись: кнопки модерации сообщества. *}
+            <div n:if="$suggestion ?? false && $canBePinned" class="suggestionControls">
+                <input type="button" class="button" id="publish_post" data-id="{$post->getId()}" value="{_publish_suggested}" />
+                <input type="button" class="button" id="decline_post" data-id="{$post->getId()}" value="{_decline_suggested}" />
+            </div>
+
+            <div n:if="$post->isAd()" class="post-ad">! {_post_is_ad}</div>
+
+            <div n:if="$post->hasSource()" class="sourceDiv">
+                {_source}: {$post->getSource(true)|noescape}
+            </div>
+
+            {* Подпись автора у записи от имени сообщества. *}
+            <div n:if="$post->isSigned()" class="post-signature">
+                {var $actualAuthor = $post->getOwner(false)}
+                {_author}:
+                <a href="{$actualAuthor->getURL()}" class="mention" data-mention-ref="{$actualAuthor->getId()}">
+                    {$actualAuthor->getCanonicalName()}
+                </a>
+            </div>
+
+        </div>
+
+        {* Контейнер для формы редактирования (наполняет JS). *}
+        <div class="post-edit" n:if="!$compact"></div>
+
+        {* ---------- ДЕЙСТВИЯ ---------- *}
+        <footer n:if="!$compact" class="post-actions post-menu">
+
+            {* Гостю недоступны удаление и закрепление. *}
+            {if !isset($thisUser)}
+                {var $forceNoDeleteLink = true}
+                {var $forceNoPinLink = true}
+            {/if}
+
+            <a n:if="!($forceNoEditLink ?? false) && isset($thisUser) && $post->canBeEditedBy($thisUser)"
+               id="editPost" data-id="{$post->getPrettyId()}">{_edit}</a>
+
+            {if !($forceNoDeleteLink ?? false) && $canBeArchived}
+                <a class="oldPostArchive" href="/wall{$post->getPrettyId()}/archive?hash={rawurlencode($csrfToken)}">
+                    {if $post->isArchived()}{_unarchive_action}{else}{_archive_action}{/if}
+                </a>
+            {/if}
+
+            <a n:if="!($forceNoDeleteLink ?? false) && $canBeDeleted"
+               class="oldPostDelete" href="/wall{$post->getPrettyId()}/delete"
+               id="_wallDelete" data="{$post->getPrettyId()}">{_delete}</a>
+
+            <a n:if="$feedIgnoreButton ?? false && !$canBeDeleted"
+               id="__ignoreSomeoneFeed" data-val="1" data-id="{$wallOwner->getRealId()}">{_feed_ignore}</a>
+
+            <a n:if="!$canBeDeleted" href="javascript:reportPost({$post->getId()})">{_report}</a>
+
+            {if !($forceNoPinLink ?? false) && $canBePinned}
+                {if $post->isPinned()}
+                    <a href="/wall{$post->getPrettyId()}/pin?act=unpin&hash={rawurlencode($csrfToken)}">{_unpin}</a>
+                {else}
+                    <a href="/wall{$post->getPrettyId()}/pin?act=pin&hash={rawurlencode($csrfToken)}">{_pin}</a>
+                {/if}
+            {/if}
+
+            <a n:if="!($forceNoCommentsLink ?? false)" href="/wall{$post->getPrettyId()}#comments">
+                {_comments}{if $commentsCount > 0} (<b>{$commentsCount}</b>){/if}
+            </a>
+
+            <a n:if="!($forceNoShareLink ?? false)"
+               id="reposts{$post->getPrettyId()}" class="post-share-button"
+               {ifset $thisUser}href="javascript:repost('{$post->getPrettyId()}', 'post')"{/ifset}>
+                {_share}{if $repostsCount > 0} (<b id="repostsCount{$post->getPrettyId()}">{$repostsCount}</b>){/if}
+            </a>
+
+            <span n:if="!($forceNoLike ?? false)" class="like_wrap">
+                {ifset $thisUser}
+                    {var $liked = $post->hasLikeFrom($thisUser)}
+                    <a href="/wall{$post->getPrettyId()}/like?hash={rawurlencode($csrfToken)}"
+                       class="post-like-button"
+                       data-liked="{(int) $liked}" data-likes="{$likesCount}"
+                       data-id="{$post->getPrettyId()}" data-type="post">
+                        <span class="heart" id="{if $liked}liked{/if}"></span>
+                        <span class="likeCnt">{if $likesCount > 0}{$likesCount}{/if}</span>
+                    </a>
+                {else}
+                    <a n:if="$likesCount > 0" class="post-like-button">
+                        <span class="heart"></span>
+                        <span class="likeCnt">{$likesCount}</span>
+                    </a>
+                {/ifset}
+            </span>
+
+        </footer>
+
+    </div>
+
+</article>

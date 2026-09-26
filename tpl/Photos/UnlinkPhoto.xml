@@ -1,0 +1,24 @@
+{*  =========================================================
+    UNLINK PHOTO — подтверждение удаления фото.
+
+    POST только с CSRF-хешем: сам объект определяется по URL.
+    ========================================================= *}
+
+{extends "../@layout.xml"}
+
+{block title}{_delete_photo}{/block}
+{block header}{_delete_photo}{/block}
+
+{block content}
+    <p>{_sure_deleting_photo}</p>
+
+    <form class="form" method="POST">
+        <input type="hidden" name="hash" value="{$csrfToken}" />
+
+        <div class="form-actions">
+            {* Возврат назад по Referer — так было в оригинале. *}
+            <a href="{$_SERVER['HTTP_REFERER']}" class="button button-secondary">{_no}</a>
+            <button type="submit" class="button button-primary">{_yes}</button>
+        </div>
+    </form>
+{/block}

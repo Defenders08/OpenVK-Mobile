@@ -1,0 +1,190 @@
+{*  =========================================================
+    FRIENDS — друзья, заявки и подписчики (/friends{N}).
+
+    Всё зависит от GET-параметра ?act=:
+      (пусто)    — друзья;
+      online     — друзья онлайн;
+      incoming   — входящие заявки;
+      outcoming  — исходящие заявки;
+      followers  — подписчики.
+
+    Наследует @listView.xml. $perPage = 6 — не менять:
+    столько отдаёт User::_abstractRelationGenerator.
+
+    Действия (блок actions) — ровно те же формы, что в оригинале
+    (/setSub/user, поля act → id → hash). Порядок полей важен:
+    штатный JS (al_wall.js, #_submitUserSubscriptionAction)
+    читает первое поле как act.
+    ========================================================= *}
+
+{extends "../@listView.xml"}
+
+{var $perPage = 6}
+{var $act = $_GET["act"] ?? "friends"}
+{var $isOwner = isset($thisUser) && $thisUser->getId() === $user->getId()}
+{var $isReqAct = $act === "incoming" || $act === "outcoming" || $act === "followers"}
+
+{if $act == "incoming"}
+    {var $iterator = iterator_to_array($user->getRequests($page))}
+    {var $count    = $user->getRequestsCount()}
+{elseif $act == "outcoming"}
+    {var $iterator = iterator_to_array($user->getSubscriptions($page))}
+    {var $count    = $user->getSubscriptionsCount()}
+{elseif $act == "followers"}
+    {var $iterator = iterator_to_array($user->getFollowers($page))}
+    {var $count    = $user->getFollowersCount()}
+{elseif $act == "online"}
+    {var $iterator = iterator_to_array($user->getFriendsOnline($page))}
+    {var $count    = $user->getFriendsOnlineCount()}
+{else}
+    {var $iterator = iterator_to_array($user->getFriends($page))}
+    {var $count    = $user->getFriendsCount()}
+{/if}
+
+{block title}
+    {if $act == "incoming"}{_incoming_req}
+    {elseif $act == "outcoming"}{_outcoming_req}
+    {elseif $act == "followers"}{_followers}
+    {elseif $act == "online"}{_friends_online}
+    {else}{_friends}{/if}
+{/block}
+
+{block header}
+    {if $isOwner}
+        {_my_friends}
+    {else}
+        <a href="{$user->getURL()}">{$user->getCanonicalName()}</a> &raquo;
+        {if $act == "incoming"}{_incoming_req}
+        {elseif $act == "outcoming"}{_outcoming_req}
+        {elseif $act == "followers"}{_followers}
+        {elseif $act == "online"}{_friends_online}
+        {else}{_friends}{/if}
+    {/if}
+{/block}
+
+{block tabs}
+    <div n:attr="id => ($act === 'friends' ? 'activetabs' : null)" class="tab">
+        <a n:attr="id => ($act === 'friends' ? 'act_tab_a' : null)" href="?">{_all_friends}
+            <em n:if="$user->getFriendsCount() > 0">{$user->getFriendsCount()}</em></a>
+    </div>
+    <div n:attr="id => ($act === 'online' ? 'activetabs' : null)" class="tab">
+        <a n:attr="id => ($act === 'online' ? 'act_tab_a' : null)" href="?act=online">{_online}
+            <em n:if="$user->getFriendsOnlineCount() > 0">{$user->getFriendsOnlineCount()}</em></a>
+    </div>
+    {* Заявки видит только владелец страницы *}
+    <div n:if="$isOwner" n:attr="id => ($isReqAct ? 'activetabs' : null)" class="tab">
+        <a n:attr="id => ($isReqAct ? 'act_tab_a' : null)" href="?act=incoming">{_req}
+            <em n:if="$user->getRequestsCount() > 0">{$user->getRequestsCount()}</em></a>
+    </div>
+{/block}
+
+{block size}
+    {*
+       Подвкладки заявок в стиле мобильной темы.
+
+       Используем тот же компонент .tabs-bar / .tab-item,
+       что и основные вкладки мобильной темы:
+       обычная вкладка — светлая кнопка, активная — синяя.
+    *}
+    <div n:if="$isReqAct" class="tabs-bar vkx-request-tabs">
+        <a href="?act=incoming"
+           n:class="tab-item, $act === 'incoming' ? 'selected'">
+            {_incoming_req}
+        </a>
+        <a href="?act=followers"
+           n:class="tab-item, $act === 'followers' ? 'selected'">
+            {_followers}
+        </a>
+        <a href="?act=outcoming"
+           n:class="tab-item, $act === 'outcoming' ? 'selected'">
+            {_outcoming_req}
+        </a>
+    </div>
+
+    {* Поиск людей — штатный поиск OpenVK (GET /search?section=users&q=) *}
+    <div n:if="$isOwner && !$isReqAct" class="vkx-search">
+        <form action="/search" method="get">
+            <input type="hidden" name="section" value="users" />
+            <input type="text" name="q" value="" placeholder="{_header_search}" />
+        </form>
+    </div>
+
+    <div class="summaryBar">
+        <div class="summary">
+            {if $isOwner}
+                {if $act == "incoming" || $act == "outcoming"}{tr("req", $count)}
+                {elseif $act == "followers"}{tr("followers", $count)}
+                {elseif $act == "online"}{tr("friends_list_online", $count)}
+                {else}{tr("friends_list", $count)}{/if}
+            {else}
+                {tr("friends", $count)}
+            {/if}
+        </div>
+    </div>
+{/block}
+
+{* ---------- ОПИСАНИЕ ЭЛЕМЕНТА СПИСКА ---------- *}
+
+{block link|strip|stripHtml}{$x->getURL()}{/block}
+
+{block preview}
+    <img class="vkx-av" src="{$x->getAvatarUrl('miniscule')}" alt="" loading="lazy" />
+{/block}
+
+{block name}
+    {$x->getCanonicalName()}
+    <img n:if="$x->isVerified()" class="name-checkmark"
+         src="/assets/packages/static/openvk/img/checkmark.png" alt="" />
+{/block}
+
+{block description}
+    <div n:if="$x->getStatus()" class="vkx-clamp">{$x->getStatus()}</div>
+    <div n:if="$x->isOnline()" class="vkx-online">{_online}</div>
+{/block}
+
+{block actions}
+    {if isset($thisUser) && ($x->getId() !== $thisUser->getId()) && ($thisUser->getId() === $user->getId())}
+        {var $subStatus = $x->getSubscriptionStatus($thisUser)}
+        {if $subStatus === 0}
+            <form action="/setSub/user" method="post" class="profile_link_form" id="_submitUserSubscriptionAction">
+                <input type="hidden" name="act" value="add" />
+                <input type="hidden" name="id" value="{$x->getId()}" />
+                <input type="hidden" name="hash" value="{$csrfToken}" />
+                <input type="submit" class="profile_link" value="{_friends_add}" />
+            </form>
+        {elseif $subStatus === 1}
+            <form action="/setSub/user" method="post" class="profile_link_form" id="_submitUserSubscriptionAction">
+                <input type="hidden" name="act" value="add" />
+                <input type="hidden" name="id" value="{$x->getId()}" />
+                <input type="hidden" name="hash" value="{$csrfToken}" />
+                <input type="submit" class="profile_link" value="{_friends_accept}" />
+            </form>
+            {if $act !== 'followers'}
+                <form action="/setSub/user" method="post" class="profile_link_form" id="_submitUserSubscriptionAction">
+                    <input type="hidden" name="act" value="rej" />
+                    <input type="hidden" name="id" value="{$x->getId()}" />
+                    <input type="hidden" name="hash" value="{$csrfToken}" />
+                    <input type="submit" class="profile_link" value="{_friends_leave_in_flw}" />
+                </form>
+            {/if}
+        {elseif $subStatus === 2}
+            <form action="/setSub/user" method="post" class="profile_link_form" id="_submitUserSubscriptionAction">
+                <input type="hidden" name="act" value="rem" />
+                <input type="hidden" name="id" value="{$x->getId()}" />
+                <input type="hidden" name="hash" value="{$csrfToken}" />
+                <input type="submit" class="profile_link" value="{_friends_reject}" />
+            </form>
+        {elseif $subStatus === 3}
+            <a href="/im?sel={$x->getId()}" class="profile_link" rel="nofollow">{_send_message}</a>
+            <form action="/setSub/user" method="post" class="profile_link_form" id="_submitUserSubscriptionAction">
+                <input type="hidden" name="act" value="rem" />
+                <input type="hidden" name="id" value="{$x->getId()}" />
+                <input type="hidden" name="hash" value="{$csrfToken}" />
+                <input type="submit" class="profile_link" value="{_friends_delete}" />
+            </form>
+        {/if}
+    {elseif isset($thisUser) && ($x->getId() !== $thisUser->getId())}
+        {* Чужой список: просто «Написать» — как в макете. *}
+        <a href="/im?sel={$x->getId()}" class="profile_link" rel="nofollow">{_send_message}</a>
+    {/if}
+{/block}

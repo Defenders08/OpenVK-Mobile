@@ -1,0 +1,42 @@
+{*  =========================================================
+    LIKERS — список тех, кто поставил лайк.
+
+    Наследует @listView.xml, поэтому определяет только блоки
+    элемента. $x — текущий пользователь из списка.
+    $item и $type приходят из презентера.
+    ========================================================= *}
+
+{extends "../@listView.xml"}
+
+{block title}{_likers_list}{/block}
+
+{block header}
+    <a href="{$item->getPageURL()}">{tr($type)}</a> &raquo; {_likers_list}
+{/block}
+
+{block tabs}
+    <div class="tab" id="activetabs">
+        <a id="act_tab_a" href="#">{_liked_verb}</a>
+    </div>
+{/block}
+
+{block link|strip|stripHtml}{$x->getURL()}{/block}
+
+{block preview}
+    <img src="{$x->getAvatarUrl('tiny')}" width="75" loading="lazy" alt="" />
+{/block}
+
+{block name}
+    {$x->getCanonicalName()}
+    <img n:if="$x->isVerified()" class="name-checkmark"
+         src="/assets/packages/static/openvk/img/checkmark.png" alt="" />
+{/block}
+
+{block description}
+    <div class="form-field"><span class="form-label">{_pronouns}:</span>
+        {$x->isFemale() ? tr("female") : ($x->isNeutral() ? tr("neutral") : tr("male"))}</div>
+    <div class="form-field"><span class="form-label">{_relationship}:</span>
+        {$x->getLocalizedMaritalStatus()}</div>
+    <div class="form-field"><span class="form-label">{_registration_date}:</span>
+        {$x->getRegistrationTime()}</div>
+{/block}

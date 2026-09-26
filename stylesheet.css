@@ -1,0 +1,1632 @@
+:root {
+
+      /* --- Фоны (Backgrounds) --- */
+      --color-background: #FFFFFF;            /* основной фон контента (карточки, шапка, модалки) */
+      --color-background-page: #F5F5F5;       /* фон самой страницы за пределами контента */
+      --color-background-secondary: #F0F2F5;  /* фон второстепенных блоков (панели, disabled-поля, счётчики) */
+      --color-background-hover: #F7F9FA;      /* фон при наведении (пункты списков, строки таблиц) */
+      --color-background-status: #EAEFF3;     /* подсвеченный/статусный фон (активные вкладки, инфо-блоки) */
+
+      /* --- Текст (Text) --- */
+      --color-text-dark: #000000;      /* самый сильный текст (базовый цвет body) */
+      --color-text-strong: #222222;    /* акцент/заголовки, текст постов */
+      --color-text: #212121;           /* основной текст (близко к text-strong, для новых блоков) */
+      --color-text-form: #333333;      /* текст в формах и блоках ввода */
+      --color-text-secondary: #656565; /* второстепенный текст */
+      --color-text-muted: #777777;     /* приглушённый текст (подписи, плейсхолдеры) */
+      --color-text-tertiary: #888888;  /* третичный/неактивный текст (даты, счётчики) */
+
+      /* --- Интерактивные элементы (Primary brand color) --- */
+      --color-primary: #597DA4;         /* Основной фирменный цвет темы (ссылки, кнопки, фокус) */
+      --color-primary-light: #698EB6;   /* Светлый оттенок (hover-состояния кнопок и вкладок) */
+      --color-primary-strong: #446B92;  /* Более тёмный вариант фирменного цвета (текст ссылок, границы, active) */
+
+      /* --- Границы / разделители (Borders / Dividers) --- */
+      --color-border: #E0E0E0;         /* обычный разделитель */
+      --color-border-section: #D7D8DB; /* более заметная структурная граница */
+      --color-border-list: #E1E6EB;    /* разделитель в списках/меню/ленте */
+      --color-border-input: #C3CBD4;   /* граница полей ввода и элементов управления */
+
+      /* --- Эффекты (тени, подсветка, оверлеи) --- */
+      --color-primary-shadow: rgba(35, 62, 89, 0.8);   /* тень текста на фирменных кнопках/шапке */
+      --color-overlay: rgba(0, 0, 0, 0.55);            /* затемнение фона под модальными окнами */
+      --color-shadow-soft: rgba(0, 0, 0, 0.08);        /* лёгкая тень карточек/панелей */
+      --color-shadow-strong: rgba(0, 0, 0, 0.35);      /* насыщенная тень всплывающих окон */
+      --color-highlight-inset: rgba(255, 255, 255, 0.2); /* внутренняя подсветка сверху (глянец кнопок) */
+    }
+
+    *, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      margin: 0; padding: 0; background-color: #EEEEEE;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Lucida Grande", Tahoma, Arial, sans-serif;
+      font-size: 13px; line-height: 1.38; color: var(--color-text-dark);
+      -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+      min-height: 100vh;
+    }
+    a { color: var(--color-primary-strong); text-decoration: none; cursor: pointer; }
+    a:hover { text-decoration: underline; }
+    ul, ol, dl, dd, dt, h1, h2, h3, h4, p, form { margin: 0; padding: 0; list-style: none; }
+    input, textarea, select, button { font-family: inherit; font-size: 13px; outline: none; color: inherit; }
+    button { background: none; border: none; cursor: pointer; }
+    img { max-width: 100%; height: auto; vertical-align: middle; }
+
+    #vk_wrap {
+      position: relative; width: 100%; max-width: 560px; min-height: 100vh;
+      margin: 0 auto; background: var(--color-background);
+      border-left: 1px solid var(--color-border); border-right: 1px solid var(--color-border);
+      box-shadow: 0 0 16px var(--color-shadow-soft); padding-bottom: 16px;
+    }
+    @media (max-width: 560px) {
+      #vk_wrap { border-left: none; border-right: none; box-shadow: none; }
+    }
+
+    .mhead {
+      background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-strong) 100%);
+      height: 44px; display: flex; align-items: center;
+      position: sticky; top: 0; z-index: 200;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28); user-select: none;
+    }
+    .mhead-btn {
+      height: 100%; display: inline-flex; align-items: center; justify-content: center;
+      padding: 0 12px; color: var(--color-background); font-weight: bold; text-shadow: 0 -1px 0 var(--color-primary-shadow);
+      border-left: 1px solid rgba(255, 255, 255, 0.15); border-right: 1px solid rgba(27, 47, 71, 0.5);
+      cursor: pointer; transition: background-color 0.15s ease;
+    }
+    .mhead-btn:first-child { border-left: none; }
+    .mhead-btn:last-child { border-right: none; }
+    .mhead-btn:hover { background-color: rgba(255, 255, 255, 0.08); }
+    .mhead-btn:active { background-color: rgba(0, 0, 0, 0.15); }
+    .mhead-btn .icon-menu {
+      display: inline-block; width: 16px; height: 12px;
+      background: repeating-linear-gradient(to bottom, #ffffff, #ffffff 2px, transparent 2px, transparent 5px);
+      margin-right: 8px; flex-shrink: 0;
+    }
+    .mhead-logo-text {
+      font-size: 15px;
+      letter-spacing: -0.3px;
+      white-space: nowrap;
+    }
+    .has-back-nav .mhead-logo-text {
+      display: none;
+    }
+    .has-back-nav .mhead-btn:first-child .icon-menu {
+      margin-right: 0;
+    }
+    .mhead-title-wrap {
+      flex: 1; height: 100%; display: flex; align-items: center; min-width: 0;
+      padding: 0 10px; cursor: default;
+    }
+    .has-back-nav .mhead-title-wrap {
+      cursor: pointer; user-select: none;
+    }
+    .has-back-nav .mhead-title-wrap:hover {
+      background-color: rgba(255, 255, 255, 0.08);
+    }
+    .has-back-nav .mhead-title-wrap:active {
+      background-color: rgba(0, 0, 0, 0.15);
+    }
+    .mhead-back-btn {
+      display: none; align-items: center; justify-content: center;
+      background: none; border: none; color: var(--color-background);
+      padding: 0 6px 0 0; margin: 0; cursor: pointer; flex-shrink: 0;
+      line-height: 1;
+    }
+    .has-back-nav .mhead-back-btn {
+      display: inline-flex;
+    }
+    .mhead-back-chevron {
+      width: 10px; height: 16px; display: block; flex-shrink: 0;
+      stroke: var(--color-background); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round;
+      fill: none; filter: drop-shadow(0 -1px 0 rgba(49, 81, 116, 0.8));
+    }
+    .mhead-title {
+      color: var(--color-background); font-weight: bold; font-size: 14.5px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 -1px 0 var(--color-primary-shadow);
+    }
+    .mhead-actions { margin-left: auto; height: 100%; display: flex; }
+    .mhead-actions .mhead-btn { font-size: 14px; min-width: 40px; }
+
+    .tabs-bar {
+      background: var(--color-background); padding: 7px 8px; border-bottom: 1px solid var(--color-border);
+      display: flex; gap: 5px; overflow-x: auto; white-space: nowrap; scrollbar-width: none;
+      align-items: center;
+    }
+    .tabs-bar::-webkit-scrollbar { display: none; }
+    .tabs-bar .tab-item {
+      padding: 4px 10px 5px 10px; font-size: 13px; font-weight: normal; color: var(--color-primary-strong);
+      background: var(--color-background-status); border: 1px solid var(--color-border); border-radius: 3px;
+      text-decoration: none; display: inline-flex; align-items: center;
+      line-height: 1.3; user-select: none;
+      box-shadow: inset 0 1px 0 var(--color-background), 0 1px 1px rgba(0, 0, 0, 0.04);
+      transition: all 0.12s ease; cursor: pointer;
+    }
+    .tabs-bar .tab-item:hover {
+      background: var(--color-background-status); border-color: var(--color-border-input); color: var(--color-primary-strong);
+    }
+    .tabs-bar .tab-item:active {
+      background: var(--color-background-status); border-color: var(--color-border-input);
+      box-shadow: inset 0 1px 2px var(--color-shadow-soft);
+    }
+    .tabs-bar .tab-item.selected {
+      background: var(--color-primary);
+      background: linear-gradient(to bottom, var(--color-primary) 0%, var(--color-primary-strong) 100%);
+      border: 1px solid var(--color-primary-strong);
+      border-top-color: var(--color-primary-strong);
+      border-bottom-color: var(--color-primary-strong);
+      color: var(--color-background); font-weight: bold;
+      text-shadow: 0 -1px 0 var(--color-primary-shadow);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 1px 2px var(--color-shadow-soft);
+    }
+    .tabs-bar .tab-item.selected:hover {
+      background: linear-gradient(to bottom, var(--color-primary-light) 0%, var(--color-primary-strong) 100%);
+    }
+    .tabs-bar .tab-item em {
+      font-style: normal; font-size: 10px; font-weight: normal; color: var(--color-primary-strong);
+      background: var(--color-background-secondary); padding: 1px 5px; border-radius: 8px; margin-left: 5px;
+    }
+    .tabs-bar .tab-item.selected em {
+      color: var(--color-background); background: rgba(0, 0, 0, 0.18);
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
+    }
+
+    .phead {
+      padding: 8px 10px; background: var(--color-background-secondary); border-bottom: 1px solid var(--color-border-list);
+      font-size: 11px; color: var(--color-text-secondary); display: flex; justify-content: space-between; align-items: center;
+    }
+    .phead b { color: var(--color-text-strong); }
+
+    /* =====================================================
+       ВКЛАДКИ РЕАЛЬНЫХ СТРАНИЦ OPENVK (.tabs > .tab > a/span)
+
+       Разметку .tabs/.tab/#activetabs/#act_tab_a задаёт движок
+       и десятки .xml-шаблонов (Wall, Friends, Settings, Apps,
+       Documents, Report, NoSpam и т.д.) — её саму мы не трогаем,
+       чтобы не переписывать все страницы. Здесь только визуально
+       повторяем дизайн .tabs-bar/.tab-item из макета вёрстки:
+       светлая «таблетка» в обычном состоянии и синий градиент
+       у активной вкладки.
+       ===================================================== */
+    .tabs {
+      background: var(--color-background); padding: 7px 8px; border-bottom: 1px solid var(--color-border);
+      display: flex; flex-wrap: wrap; gap: 5px; align-items: center;
+      overflow-x: auto; white-space: nowrap; scrollbar-width: none;
+    }
+    .tabs::-webkit-scrollbar { display: none; }
+
+    /* Сама .tab — просто контейнер, вид задаём ссылке/span внутри неё. */
+    .tabs .tab { display: inline-flex; flex-shrink: 0; }
+
+    .tabs .tab > a,
+    .tabs .tab > span {
+      padding: 4px 10px 5px 10px; font-size: 13px; font-weight: normal; color: var(--color-primary-strong);
+      background: var(--color-background-status); border: 1px solid var(--color-border); border-radius: 3px;
+      text-decoration: none; display: inline-flex; align-items: center;
+      line-height: 1.3; user-select: none; white-space: nowrap;
+      box-shadow: inset 0 1px 0 var(--color-background), 0 1px 1px rgba(0, 0, 0, 0.04);
+      transition: all 0.12s ease; cursor: pointer;
+    }
+    .tabs .tab > a:hover,
+    .tabs .tab > span:hover {
+      background: var(--color-background-status); border-color: var(--color-border-input); color: var(--color-primary-strong); text-decoration: none;
+    }
+    .tabs .tab > a:active,
+    .tabs .tab > span:active {
+      background: var(--color-background-status); border-color: var(--color-border-input);
+      box-shadow: inset 0 1px 2px var(--color-shadow-soft);
+    }
+
+    /* Активная вкладка: id="activetabs" на .tab и/или id="act_tab_a" на ссылке.
+       id="active" — вариант для подвкладок (например, User/Friends.xml). */
+    .tabs .tab#activetabs > a,
+    .tabs .tab#activetabs > span,
+    .tabs .tab#active > a,
+    .tabs .tab#active > span,
+    .tabs .tab > #act_tab_a {
+      background: var(--color-primary);
+      background: linear-gradient(to bottom, var(--color-primary) 0%, var(--color-primary-strong) 100%);
+      border: 1px solid var(--color-primary-strong);
+      border-top-color: var(--color-primary-strong);
+      border-bottom-color: var(--color-primary-strong);
+      color: var(--color-background); font-weight: bold;
+      text-shadow: 0 -1px 0 var(--color-primary-shadow);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 1px 2px var(--color-shadow-soft);
+    }
+    .tabs .tab#activetabs > a:hover,
+    .tabs .tab#active > a:hover {
+      background: linear-gradient(to bottom, var(--color-primary-light) 0%, var(--color-primary-strong) 100%);
+    }
+
+    /* Счётчики внутри вкладок (если где-то встретится <em>N</em>). */
+    .tabs .tab em {
+      font-style: normal; font-size: 10px; font-weight: normal; color: var(--color-primary-strong);
+      background: var(--color-background-secondary); padding: 1px 5px; border-radius: 8px; margin-left: 5px;
+    }
+    .tabs .tab#activetabs em,
+    .tabs .tab#active em {
+      color: var(--color-background); background: rgba(0, 0, 0, 0.18);
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
+    }
+
+    /* Побочные ссылки внутри .tabs, не обёрнутые в .tab
+       (например, «Читать в RSS» на стене или .side_link у подарков,
+       либо панель действий над альбомом фото) — оформляем как
+       обычную неброскую ссылку, а не как вкладку. */
+    .tabs > a {
+      margin-left: auto; padding: 4px 2px; font-size: 12px; color: var(--color-primary-strong);
+    }
+    .tabs > a:first-child { margin-left: 0; }
+    .tabs > a:hover { color: #3a5c81; }
+
+    #sidebar_overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45);
+      z-index: 300; backdrop-filter: blur(1px);
+    }
+    #sidebar_menu {
+      position: fixed; top: 0; left: -290px; width: 275px; height: 100%;
+      background: var(--color-background); z-index: 301; overflow-y: auto;
+      transition: left 0.22s cubic-bezier(0.1, 0.8, 0.1, 1);
+      box-shadow: 2px 0 14px rgba(0, 0, 0, 0.3);
+    }
+    body.menu-open #sidebar_menu { left: 0; }
+    body.menu-open #sidebar_overlay { display: block; }
+    .menu-user {
+      padding: 12px 14px; background: #f1f2f5; border-bottom: 1px solid #e1e6eb;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .menu-user img { width: 42px; height: 42px; border-radius: 3px; object-fit: cover; flex-shrink: 0; background: #cfd8e2; }
+    .menu-user .uname { font-weight: bold; color: var(--color-primary-strong); font-size: 14px; line-height: 1.2; }
+    .main-nav li { border-bottom: 1px solid #f1f2f5; }
+    .main-nav a {
+      display: flex; align-items: center; padding: 11px 14px; color: #2c4970;
+      font-weight: bold; font-size: 13px; text-decoration: none; transition: background 0.12s ease;
+    }
+    .main-nav a:hover, .main-nav a:active { background: #f1f2f58a; }
+    .main-nav a .nav-ico {
+      width: 20px; height: 20px; margin-right: 12px;
+      display: inline-flex; align-items: center; justify-content: center;
+      color: #647d9b; font-size: 14px; flex-shrink: 0;
+    }
+    .main-nav a:hover .nav-ico { color: var(--color-primary-strong); }
+    .nav-ico svg, .actionsheet-ico svg { display: block; flex-shrink: 0; }
+    .actionsheet-ico {
+      width: 20px; height: 20px; display: inline-flex;
+      align-items: center; justify-content: center;
+      color: var(--color-primary-strong); flex-shrink: 0;
+    }
+    .post-pinned-badge svg { flex-shrink: 0; display: inline-block; vertical-align: middle; }
+    .main-nav a em {
+      font-style: normal; font-size: 11px; font-weight: bold; background: #dbe4ec;
+      color: #3f648e; border-radius: 3px; padding: 2px 6px; margin-left: auto;
+    }
+    .menu-foot { padding: 14px; font-size: 11px; color: var(--color-text-tertiary); background: #fdfdfd; border-top: 1px solid var(--color-background-secondary); }
+    .menu-foot a { color: var(--color-text-muted); margin-right: 10px; }
+
+    /* =====================================================
+       ПОСТОЯННЫЙ SIDEBAR НА ПЛАНШЕТЕ/ПК.
+
+       Это ТО ЖЕ САМОЕ выдвижное меню (#sidebar_menu) — те же
+       ссылки, пункты, иконки, разделители (border-bottom у
+       li) и тот же JS toggleMenu(). Здесь только его
+       позиционирование меняется с "спрятан за левым краем
+       экрана" на "постоянно видимая колонка слева, под шапкой".
+
+       .mhead вынесен на уровень страницы (см. разметку) и на
+       этой ширине идёт полноширинной полосой НАД #page_row
+       (сайдбар + контент), как на макете. #sidebar_menu
+       прилипает (sticky) не к самому верху, а к низу шапки
+       (top: 44px, это её высота), чтобы не наезжать на неё
+       при скролле.
+
+       Порог 560px выбран не случайно: это тот же брейкпоинт,
+       на котором #vk_wrap перестаёт быть мобильной лентой
+       (см. `@media (max-width: 560px)` выше). Т.е. "мобильный"
+       и "планшет/ПК" в этой теме уже разделены этой границей.
+
+       На мобильных (<=560px) ничего не меняется: шапка и
+       сайдбар остаются на своих местах, меню по-прежнему
+       выдвижное и открывается через ☰.
+       ===================================================== */
+    @media (min-width: 561px) {
+      /* Общая "рамка" из шапки + строки (сайдбар+контент),
+         центрированная так же, как раньше центрировался
+         #vk_wrap, только теперь по ширине сайдбар+контент. */
+      body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .mhead {
+        width: 100%;
+        max-width: 835px;
+      }
+
+      #page_row {
+        display: flex;
+        align-items: flex-start;
+        width: 100%;
+        max-width: 835px;
+      }
+
+      /* Оба селектора перекрывают и закрытое, и "menu-open"
+         состояние — сайдбар всегда виден и не сдвигается,
+         что бы ни делал toggleMenu(). */
+      #sidebar_menu,
+      body.menu-open #sidebar_menu {
+        position: sticky;
+        top: 44px; /* высота .mhead — сайдбар липнет сразу под шапкой */
+        left: 0;
+        height: calc(100vh - 44px);
+        flex: 0 0 275px;
+        box-shadow: none;
+        transition: none;
+        box-shadow: -8px 0 16px var(--color-shadow-soft);
+      }
+
+      /* Затемнение фона нужно только для мобильной шторки. */
+      #sidebar_overlay,
+      body.menu-open #sidebar_overlay {
+        display: none !important;
+      }
+
+      /* Сама лента с контентом становится вторым элементом
+         flex-ряда рядом с сайдбаром; ширина и вид не меняются. */
+      #vk_wrap {
+        flex: 1 1 560px;
+        margin: 0;
+      }
+    }
+
+    .page-section { display: none; }
+    .page-section.active { display: block; }
+
+    .btn-vk {
+      display: inline-block; padding: 6px 13px; font-size: 12px; font-weight: bold;
+      color: var(--color-background); background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-strong) 100%);
+      border: 1px solid var(--color-primary-strong); border-radius: 2px; cursor: pointer; text-shadow: 0 -1px 0 var(--color-primary-shadow);
+      text-align: center; line-height: 1.25; user-select: none; box-shadow: inset 0 1px 0 var(--color-highlight-inset);
+      transition: background 0.12s ease, transform 0.08s ease;
+    }
+    .btn-vk:hover { background: linear-gradient(180deg, var(--color-primary-light) 0%, var(--color-primary) 100%); border-color: var(--color-primary-strong); }
+    .btn-vk:active { background: var(--color-primary); transform: translateY(1px); }
+    .btn-vk.secondary {
+      background: linear-gradient(180deg, #f5f8fa 0%, #e6ebf0 100%);
+      color: var(--color-primary-strong); border-color: var(--color-border-input); text-shadow: none; box-shadow: inset 0 1px 0 var(--color-background);
+    }
+    .btn-vk.secondary:hover { background: linear-gradient(180deg, #ffffff 0%, #edf1f6 100%); color: var(--color-primary-strong); }
+    .btn-vk.secondary:active { background: var(--color-background-secondary); transform: translateY(1px); }
+
+    .search-panel {
+      padding: 8px 10px; background: var(--color-background-secondary); border-bottom: 1px solid var(--color-border);
+      display: flex; gap: 8px; align-items: center;
+    }
+    .search-panel input {
+      flex: 1; padding: 6px 9px; border: 1px solid var(--color-border-input); border-radius: 3px;
+      background: var(--color-background); font-size: 13px;
+    }
+    .search-panel input:focus { border-color: var(--color-primary); }
+
+    .m-list > li {
+      display: flex; align-items: center; padding: 10px; border-bottom: 1px solid var(--color-border-list);
+      background: var(--color-background); gap: 10px; transition: background 0.1s ease;
+    }
+    .m-list > li.clickable-row { cursor: pointer; }
+    .m-list > li.clickable-row:hover { background: var(--color-background-status); }
+    .m-list > li.clickable-row:active { background: #eaf0f6; }
+    .m-list > li:hover { background: var(--color-background-secondary); }
+    .m-list > li.unread { background: var(--color-background-status); }
+    .m-list > li.create-group-item {
+      background: var(--color-background-secondary);
+      border-bottom: 1px solid var(--color-border);
+    }
+    .m-list > li.create-group-item:hover {
+      background: var(--color-background-status);
+    }
+    .m-list > li.create-group-item:hover .create-group-icon-wrap {
+      background: linear-gradient(135deg, #e1ebf5 0%, #cee0ee 100%);
+      border-color: #7b9ebd;
+      color: #274f77;
+    }
+    .m-list > li.create-group-item:active {
+      background: #e6edf4;
+    }
+    .tab-item.tab-right {
+      margin-left: auto;
+    }
+    .m-list .avatar { width: 48px; height: 48px; border-radius: 3px; object-fit: cover; flex-shrink: 0; background: var(--color-background-secondary); }
+    .m-list .content { flex: 1; min-width: 0; }
+    .m-list .line1 { display: flex; justify-content: space-between; align-items: baseline; }
+    .m-list .title { font-weight: bold; color: var(--color-primary-strong); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .m-list .title:hover { text-decoration: underline; }
+    .m-list .date { font-size: 11px; color: var(--color-text-tertiary); flex-shrink: 0; margin-left: 6px; }
+    .m-list .desc { font-size: 12px; color: var(--color-text-form); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .post-composer { background: #f6f8f9; border-bottom: 1px solid var(--color-border); padding: 10px; }
+    .post-composer.comment-box { border-top: 1px solid var(--color-border); border-bottom: none; }
+    .post-composer textarea {
+      width: 100%; height: 56px; padding: 7px 9px; border: 1px solid var(--color-border-input);
+      border-radius: 3px; resize: vertical; background: var(--color-background); font-size: 13px; outline: none;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,.06);
+    }
+    .post-composer textarea:focus { border-color: var(--color-primary); }
+    .composer-toolbar { margin-top: 8px; display: flex; justify-content: space-between; align-items: center; }
+
+    /* Панель прикрепления к записи (Attachment Preview Badge & Delete Button) */
+    .attached-badge-container {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 7px;
+      padding: 5px 8px 5px 10px;
+      background: #f1f4f8;
+      border: 1px solid #d5e0eb;
+      border-radius: 3px;
+    }
+    .attached-badge-info {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      color: #3b5f85;
+      font-weight: bold;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .attached-badge-ico {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-primary-strong);
+      flex-shrink: 0;
+    }
+    .attached-badge-name {
+      color: var(--color-text-strong);
+      font-weight: 600;
+    }
+    .btn-attach-remove {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 5px 10px;
+      min-height: 28px;
+      box-sizing: border-box;
+      font-size: 11px;
+      font-weight: bold;
+      color: #a83232;
+      background: linear-gradient(180deg, #ffffff 0%, #f9f9fa 100%);
+      border: 1px solid #d8c2c4;
+      border-radius: 2px;
+      cursor: pointer;
+      line-height: 1.25;
+      flex-shrink: 0;
+      transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease, transform 0.08s ease;
+      box-shadow: inset 0 1px 0 var(--color-background), 0 1px 2px rgba(0, 0, 0, 0.04);
+      user-select: none;
+    }
+    .btn-attach-remove:hover {
+      background: linear-gradient(180deg, #fff3f3 0%, #fce3e3 100%);
+      color: #bf2020;
+      border-color: #c99397;
+    }
+    .btn-attach-remove:active {
+      background: #f8cfcf;
+      transform: translateY(1px);
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12);
+    }
+    .btn-attach-remove svg {
+      display: block;
+      flex-shrink: 0;
+    }
+
+    /* Раскрываемый блок информации профиля и кнопка-спойлер */
+    .profile-info-block {
+      padding: 10px 12px;
+      border-bottom: 1px solid #e8ecf0;
+      font-size: 12px;
+      line-height: 1.6;
+      background: var(--color-background);
+    }
+    .prof-info-row {
+      display: flex;
+      margin-bottom: 2px;
+    }
+    .prof-info-row:last-child {
+      margin-bottom: 0;
+    }
+    .prof-info-label {
+      width: 140px;
+      color: var(--color-text-muted);
+      flex-shrink: 0;
+    }
+    .prof-info-val {
+      flex: 1;
+      min-width: 0;
+      color: var(--color-text-strong);
+      word-break: break-word;
+    }
+    .prof-details-section {
+      display: none;
+      margin-top: 6px;
+      padding-top: 6px;
+      border-top: 1px dashed var(--color-border-list);
+    }
+    .prof-details-section.open {
+      display: block;
+      animation: profSlideDown 0.18s ease-out;
+    }
+    @keyframes profSlideDown {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .btn-toggle-info {
+      width: 100%;
+      margin-top: 8px;
+      padding: 7px 10px;
+      font-size: 11.5px;
+      font-weight: bold;
+      color: #4b6b8f;
+      background: linear-gradient(180deg, #f7f9fa 0%, #ebf0f5 100%);
+      border: 1px solid #cedbe7;
+      border-radius: 3px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      line-height: 1.3;
+      transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease, transform 0.08s ease;
+      box-shadow: inset 0 1px 0 var(--color-background), 0 1px 2px rgba(0, 0, 0, 0.03);
+      user-select: none;
+    }
+    .btn-toggle-info:hover {
+      background: linear-gradient(180deg, #ffffff 0%, #f0f4f8 100%);
+      border-color: #bcccdb;
+      color: #2f537c;
+    }
+    .btn-toggle-info:active {
+      background: #dde6ef;
+      transform: translateY(1px);
+      box-shadow: inset 0 1px 2px var(--color-shadow-soft);
+    }
+    .btn-toggle-info-arrow {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.22s cubic-bezier(0.1, 0.8, 0.1, 1);
+      color: #6584a7;
+    }
+    .btn-toggle-info.expanded .btn-toggle-info-arrow {
+      transform: rotate(180deg);
+    }
+
+    .wall-post { background: var(--color-background); border-bottom: 1px solid var(--color-border-list); padding: 12px 10px; }
+    .post-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .post-header img { width: 36px; height: 36px; border-radius: 3px; object-fit: cover; background: var(--color-border); flex-shrink: 0; }
+    .post-header .author { font-weight: bold; color: var(--color-primary-strong); text-decoration: none; font-size: 13px; display: inline-block; }
+    .post-header .author:hover { text-decoration: underline; color: var(--color-primary-strong); }
+    .post-header .meta { font-size: 11px; color: var(--color-text-tertiary); margin-top: 1px; }
+    .post-header .meta a, .post-header a.meta, .post-date-link, .repost-date { color: var(--color-text-tertiary); text-decoration: none; cursor: pointer; }
+    .post-header .meta a:hover, .post-header a.meta:hover, .post-date-link:hover, .repost-date:hover { color: var(--color-primary-strong); text-decoration: underline; }
+    .post-more-btn {
+      background: transparent; border: none; color: var(--color-text-tertiary); cursor: pointer;
+      padding: 4px 6px; margin-left: auto; border-radius: 3px; display: inline-flex;
+      align-items: center; justify-content: center;
+    }
+    .post-more-btn:hover { color: var(--color-primary); background-color: var(--color-background-status); }
+    .wall-post.is-pinned { background: #fbfcfe; border-left: 2px solid var(--color-primary); }
+    .post-pinned-badge {
+      display: inline-flex; align-items: center; gap: 4px; font-size: 11px;
+      color: var(--color-primary); font-weight: bold; margin-bottom: 6px;
+    }
+    .post-body { font-size: 13px; line-height: 1.42; margin-bottom: 8px; word-break: break-word; color: var(--color-text-strong); }
+    .post-footer { display: flex; gap: 6px; margin-top: 10px; align-items: center; }
+    .post-icon {
+      width: 12px;
+      height: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .post-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      height: 26px;
+      min-height: 26px;
+      max-height: 26px;
+      padding: 0 9px;
+      box-sizing: border-box;
+      line-height: 24px;
+      background: linear-gradient(180deg, #f7f9fb 0%, #e9edf2 100%);
+      border: 1px solid var(--color-border-input);
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: bold;
+      color: var(--color-primary-strong);
+      cursor: pointer;
+      user-select: none;
+      box-shadow: inset 0 1px 0 var(--color-background);
+      transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+      white-space: nowrap;
+      vertical-align: middle;
+    }
+    .post-btn:hover { background: linear-gradient(180deg, #ffffff 0%, #edf2f7 100%); border-color: #b7c4d1; color: var(--color-primary-strong); }
+    .post-btn.liked {
+      background: linear-gradient(180deg, #fff3f5 0%, #fae2e6 100%);
+      border-color: #e5b6bf; color: #c34444;
+    }
+    .post-btn.liked .post-icon {
+      color: #c34444;
+    }
+    .post-btn.shared {
+      background: linear-gradient(180deg, #f2f7fc 0%, #e2edf7 100%);
+      border-color: #b8cde2; color: var(--color-primary-strong);
+    }
+    .post-btn.post-share-btn, .wp-actions-bar .post-share-btn {
+      margin-left: auto;
+    }
+
+    /* Репосты (Reposts) */
+    .post-repost-block {
+      margin-top: 10px;
+      padding-left: 10px;
+      border-left: 2px solid #c3d1e0;
+    }
+    .repost-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 7px;
+    }
+    .repost-header img {
+      width: 26px;
+      height: 26px;
+      border-radius: 2px;
+      object-fit: cover;
+      background: var(--color-background-secondary);
+      flex-shrink: 0;
+      border: 1px solid var(--color-border-list);
+    }
+    .repost-header .repost-meta {
+      flex: 1;
+      min-width: 0;
+      line-height: 1.25;
+    }
+    .repost-header .repost-author-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12.5px;
+      font-weight: bold;
+      color: var(--color-primary-strong);
+      cursor: pointer;
+    }
+    .repost-header .repost-author-row:hover {
+      text-decoration: underline;
+    }
+    .repost-header .repost-ico {
+      color: #7b9bb9;
+      display: inline-flex;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .repost-header .repost-date {
+      font-size: 11px;
+      color: var(--color-text-tertiary);
+      margin-top: 1px;
+    }
+    .repost-body {
+      font-size: 13px;
+      line-height: 1.44;
+      color: var(--color-text-strong);
+      word-break: break-word;
+    }
+    .post-body a, .repost-body a {
+      color: var(--color-primary-strong);
+      text-decoration: none;
+    }
+    .post-body a:hover, .repost-body a:hover {
+      text-decoration: underline;
+    }
+
+    /* Значок верификации (Verified Badge) */
+    .verified-check {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      vertical-align: -1px;
+      margin-left: 4px;
+      cursor: pointer;
+      flex-shrink: 0;
+      color: var(--color-primary);
+      transition: transform 0.12s ease;
+      line-height: 1;
+    }
+    .verified-check:hover {
+      transform: scale(1.15);
+    }
+    .verified-check svg {
+      display: block;
+    }
+    .verified-check.large {
+      vertical-align: -2px;
+      margin-left: 6px;
+    }
+
+    /* Вложения поста (Post Attachments) */
+    .post-attachments {
+      margin-top: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    /* 1. Фотографии */
+    .post-photo-single {
+      display: block;
+      width: 100%;
+      border-radius: 2px;
+      overflow: hidden;
+      cursor: pointer;
+      border: 1px solid var(--color-border);
+      background: var(--color-background-secondary);
+    }
+    .post-photo-single img {
+      width: 100%;
+      height: auto;
+      display: block;
+      max-height: 380px;
+      object-fit: cover;
+    }
+    .post-photos-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3px;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .post-photos-grid-2 .grid-photo-item {
+      height: 160px;
+      background: var(--color-background-secondary);
+      cursor: pointer;
+      overflow: hidden;
+      border: 1px solid var(--color-border);
+    }
+    .post-photos-grid-2 .grid-photo-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* 2. Видеозапись */
+    .post-video-attachment {
+      position: relative;
+      border-radius: 3px;
+      overflow: hidden;
+      border: 1px solid #c8d3de;
+      background: var(--color-text-dark);
+      cursor: pointer;
+      user-select: none;
+    }
+    .post-video-thumb {
+      position: relative;
+      width: 100%;
+      height: 190px;
+      background: #1a222c;
+      overflow: hidden;
+    }
+    .post-video-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.85;
+      display: block;
+      transition: opacity 0.15s ease;
+    }
+    .post-video-attachment:hover .post-video-thumb img {
+      opacity: 0.95;
+    }
+    .post-video-play-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.22);
+    }
+    .post-video-play-btn {
+      width: 46px;
+      height: 46px;
+      background: rgba(0, 0, 0, 0.72);
+      border: 2px solid rgba(255, 255, 255, 0.9);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-background);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+      transition: transform 0.12s ease, background 0.12s ease;
+    }
+    .post-video-attachment:hover .post-video-play-btn {
+      transform: scale(1.06);
+      background: rgba(43, 88, 122, 0.9);
+    }
+    .post-video-duration {
+      position: absolute;
+      bottom: 7px;
+      right: 8px;
+      background: rgba(0, 0, 0, 0.75);
+      color: var(--color-background);
+      font-size: 11px;
+      font-weight: bold;
+      padding: 2px 6px;
+      border-radius: 2px;
+      letter-spacing: 0.2px;
+    }
+    .post-video-info {
+      padding: 8px 10px;
+      background: var(--color-background-hover);
+      border-top: 1px solid var(--color-border-list);
+    }
+    .post-video-title {
+      font-size: 12.5px;
+      font-weight: bold;
+      color: var(--color-primary-strong);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .post-video-meta {
+      font-size: 11px;
+      color: var(--color-text-muted);
+      margin-top: 2px;
+    }
+
+    /* 3. Аудиозапись в посте — настоящий плеер (.audioEmbed из
+       Audio/player.xml), стили см. в блоке «АУДИОЗАПИСИ» ниже. */
+
+    /* 4. Документ / Файл */
+    .post-file-attachment {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 8px 10px;
+      background: var(--color-background-secondary);
+      border: 1px solid var(--color-border);
+      border-radius: 3px;
+    }
+    .post-file-ico {
+      width: 28px;
+      height: 28px;
+      min-width: 28px;
+      background: var(--color-background-status);
+      border: 1px solid #c9d5e2;
+      color: var(--color-primary-strong);
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .post-file-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .post-file-name {
+      font-size: 12.5px;
+      font-weight: bold;
+      color: var(--color-primary-strong);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .post-file-name:hover {
+      text-decoration: underline;
+    }
+    .post-file-meta {
+      font-size: 11px;
+      color: var(--color-text-tertiary);
+      margin-top: 1px;
+    }
+    .post-file-download-btn {
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: bold;
+      color: var(--color-primary-strong);
+      background: var(--color-background);
+      border: 1px solid var(--color-border-input);
+      border-radius: 2px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .post-file-download-btn:hover {
+      background: var(--color-background-secondary);
+      color: var(--color-primary-strong);
+    }
+
+    /* 5. Опрос (Poll) */
+    .post-poll-attachment {
+      margin-top: 6px;
+      padding: 10px 12px;
+      background: var(--color-background-secondary);
+      border: 1px solid var(--color-border);
+      border-radius: 3px;
+    }
+    .post-poll-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: bold;
+      color: var(--color-primary-strong);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      margin-bottom: 5px;
+    }
+    .post-poll-question {
+      font-size: 13.5px;
+      font-weight: bold;
+      color: var(--color-text-strong);
+      line-height: 1.35;
+      margin-bottom: 8px;
+    }
+    .post-poll-type {
+      font-size: 11px;
+      color: var(--color-text-tertiary);
+      margin-bottom: 8px;
+    }
+    .post-poll-options {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .post-poll-option {
+      position: relative;
+      background: var(--color-background);
+      border: 1px solid var(--color-border-input);
+      border-radius: 3px;
+      padding: 7px 10px;
+      cursor: pointer;
+      overflow: hidden;
+      user-select: none;
+      transition: border-color 0.12s ease;
+    }
+    .post-poll-option:hover {
+      border-color: var(--color-primary);
+    }
+    .post-poll-option.selected {
+      border-color: #4b739b;
+      font-weight: bold;
+    }
+    .post-poll-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      background: var(--color-background-status);
+      z-index: 1;
+      transition: width 0.35s ease;
+    }
+    .post-poll-option.selected .post-poll-bar {
+      background: #d1e3f5;
+    }
+    .post-poll-row {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      font-size: 12.5px;
+      color: var(--color-text-strong);
+    }
+    .post-poll-text {
+      flex: 1;
+      min-width: 0;
+    }
+    .post-poll-percent {
+      font-size: 12px;
+      font-weight: bold;
+      color: var(--color-primary-strong);
+      flex-shrink: 0;
+    }
+    .post-poll-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 8px;
+      font-size: 11px;
+      color: var(--color-text-tertiary);
+      padding-top: 6px;
+      border-top: 1px solid var(--color-border-list);
+    }
+
+    /* 6. Местоположение и Источник (Geo Place & Source) */
+    .post-meta-details {
+      margin-top: 7px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .post-place-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11.5px;
+      color: var(--color-primary-strong);
+      background: var(--color-background-status);
+      padding: 3px 7px;
+      border-radius: 2px;
+      width: fit-content;
+      text-decoration: none;
+      cursor: pointer;
+      border: 1px solid #d8e2ed;
+    }
+    .post-place-tag:hover {
+      background: var(--color-background-status);
+      text-decoration: underline;
+    }
+    .post-place-tag svg {
+      color: var(--color-primary-strong);
+      flex-shrink: 0;
+    }
+    .post-source-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      color: var(--color-text-tertiary);
+    }
+    .post-source-tag a {
+      color: var(--color-primary-strong);
+      text-decoration: none;
+    }
+    .post-source-tag a:hover {
+      text-decoration: underline;
+    }
+    .post-source-tag svg {
+      color: var(--color-text-tertiary);
+      flex-shrink: 0;
+    }
+
+    /* =====================================================
+       АУДИОЗАПИСИ
+
+       Раздел /audios, /playlist..., вложения аудио в постах
+       (components/attachment.xml) и встроенный в поиск список
+       (Search/Index.xml, section=audios) — везде используется
+       один и тот же настоящий партиал Audio/player.xml
+       (.audioEmbed/.audioEntry) и Audio/bigplayer.xml
+       (.bigPlayer), которые понимает штатный window.player
+       (Web/static/js/al_music.js, подключён в @layout.xml).
+       Здесь только внешний вид — ни один класс/атрибут/id,
+       которые слушает al_music.js, не переименован и не убран.
+       ===================================================== */
+
+    /* --- строка трека (player.xml): .audioEmbed > .audioEntry --- */
+    .audioEmbed { background: var(--color-background); border-bottom: 1px solid var(--color-border-list); }
+    .audioEmbed .audio { display: none; }
+    .audioEmbed.withdrawn .audioEntryWrapper,
+    .audioEmbed.processed .audioEntryWrapper { opacity: .5; }
+    .audioEntry.nowPlaying { background: #f4f7fb; }
+
+    .audioEntryWrapper { display: flex; align-items: flex-start; gap: 10px; padding: 9px 10px; }
+
+    .playerButton {
+      flex-shrink: 0; align-self: center; width: 32px; height: 32px; border-radius: 50%;
+      background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-strong) 100%); border: 1px solid var(--color-primary-strong);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .2);
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
+    }
+    .audioEmbed.processed .playerButton, .audioEmbed.withdrawn .playerButton { cursor: default; }
+    .playIcon {
+      width: 0; height: 0; margin-left: 2px; border-style: solid;
+      border-width: 5px 0 5px 8px; border-color: transparent transparent transparent var(--color-background);
+    }
+    .playIcon.paused {
+      width: 8px; height: 10px; margin-left: 0; border: none;
+      background: linear-gradient(#fff, #fff) 0 0/3px 10px no-repeat, linear-gradient(#fff, #fff) 5px 0/3px 10px no-repeat;
+    }
+
+    .status { flex: 1; min-width: 0; }
+    .mediaInfo { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; }
+    /* .info хранит "Исполнитель — Название" в одну строку (так отдаёт
+       Presenter). Чтобы получить вид «жирное название сверху, исполнитель
+       снизу» без переписывания разметки — переворачиваем поток флексом и
+       прячем визуальный разделитель "—". */
+    .mediaInfo .info { display: flex; flex-direction: column-reverse; min-width: 0; }
+    .mediaInfo .info .performer { font-weight: normal; color: var(--color-primary-strong); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .mediaInfo .info .performer a { color: inherit; text-decoration: none; }
+    .mediaInfo .info .performer a:hover { text-decoration: underline; }
+    .mediaInfo .info .tire { display: none; }
+    .mediaInfo .info .title { font-weight: bold; color: var(--color-text-strong); font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .mediaInfo .info .title.withLyrics { cursor: pointer; text-decoration: underline dotted; text-underline-offset: 2px; }
+    .mediaInfo .explicitMark { flex-shrink: 0; margin-top: 3px; color: var(--color-text-tertiary); }
+
+    .mini_timer { flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; padding-top: 2px; }
+    .mini_timer .nobold { font-size: 11px; color: var(--color-text-tertiary); white-space: nowrap; }
+    .mini_timer .buttons { display: flex; gap: 3px; }
+    @media (hover: hover) {
+      .mini_timer .nobold.hideOnHover { transition: opacity .1s ease; }
+      .audioEntryWrapper:hover .mini_timer .nobold.hideOnHover { opacity: 0; }
+    }
+    .musicIcon {
+      width: 20px; height: 20px; border-radius: 3px; cursor: pointer; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; color: #7e93ab;
+    }
+    .musicIcon:hover { background: var(--color-background-status); color: var(--color-primary-strong); }
+    .musicIcon.hidden { display: none; }
+    .musicIcon.lagged { opacity: .4; pointer-events: none; }
+    .musicIcon::before { font-style: normal; line-height: 1; }
+    .add-icon::before, .add-icon-group::before { content: "+"; font-weight: bold; font-size: 15px; }
+    .remove-icon::before, .remove-icon-group::before { content: "\2212"; font-weight: bold; font-size: 15px; }
+    .edit-icon::before { content: "\270E"; font-size: 12px; }
+    .report-icon::before { content: "\2691"; font-size: 12px; }
+    .download-icon::before { content: "\2193"; font-weight: bold; font-size: 13px; }
+
+    .lyrics {
+      display: none; padding: 8px 10px 10px 52px; font-size: 12px; line-height: 1.5;
+      color: var(--color-text-form); background: var(--color-background-secondary); border-top: 1px dashed #e5eaef;
+    }
+    .lyrics.showed { display: block; }
+
+    /* дорожка прогресса/громкости — видна только у связанного с
+       мини-плеером трека (класс .shown добавляет al_music.js) */
+    .subTracks { display: none; padding: 2px 10px 10px 52px; }
+    .subTracks.shown { display: block; }
+    .subTracks .lengthTrackWrapper { margin-bottom: 8px; }
+    .subTracks .track { position: relative; height: 4px; background: var(--color-border); border-radius: 2px; }
+    .subTracks .lengthTrackWrapper .track { cursor: pointer; }
+    .subTracks .selectableTrack, .subTracks .selectableTrackLoadProgress, .subTracks .selectableTrackSlider { position: absolute; inset: 0; }
+    .subTracks .selectableTrackLoadProgress .load_bar { position: absolute; inset: 0; width: 0; background: #c3d2e0; border-radius: 2px; }
+    .subTracks .selectableTrackSlider .slider,
+    .selectableTrackSlider .slider {
+      position: absolute; top: 50%; left: 0; width: 10px; height: 10px; margin: -5px 0 0 -5px;
+      background: var(--color-primary); border: 2px solid var(--color-background); border-radius: 50%; box-shadow: 0 0 0 1px var(--color-primary);
+    }
+
+    /* --- список строк аудио (Audio/List.xml, Playlist.xml, Search) --- */
+    .audiosContainer { background: var(--color-background); }
+    .audio-empty-state { background: var(--color-background); }
+
+    /* --- дорожка друзей под вкладками (tabs.xml) --- */
+    .audio-friends-row {
+      display: flex; gap: 10px; padding: 8px 10px; overflow-x: auto; white-space: nowrap;
+      background: var(--color-background-secondary); border-bottom: 1px solid var(--color-border-list); scrollbar-width: none;
+    }
+    .audio-friends-row::-webkit-scrollbar { display: none; }
+    .audio-friends-item { flex: 0 0 auto; width: 52px; text-align: center; text-decoration: none; }
+    .audio-friends-item img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: var(--color-background-secondary); display: block; margin: 0 auto 3px; }
+    .audio-friends-item .name { display: block; font-size: 10px; color: var(--color-primary-strong); overflow: hidden; text-overflow: ellipsis; }
+
+    /* --- «Сейчас играет» (bigplayer.xml): .bigPlayer --- */
+    .bigPlayer {
+      position: fixed; left: 50%; bottom: 0; transform: translateX(-50%);
+      width: 100%; max-width: 560px; z-index: 150;
+      background: #2c3e50; color: #ffffff; border-top: 1px solid #3d566e;
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, .25);
+    }
+    body:has(.bigPlayer) #vk_wrap { padding-bottom: 54px; }
+
+    /* «Мои аудиозаписи» (Audio/List.xml, mode=list && isMy): тот же
+       .bigPlayer, но встроенный в поток страницы сразу под вкладками,
+       а не зафиксированный снизу экрана — просьба клиента для этого
+       раздела. Функциональность и остальная вёрстка .bigPlayer не меняются. */
+    .bigPlayer.bigPlayerInline {
+      position: static;
+      left: auto; right: auto; bottom: auto; top: auto; transform: none;
+      width: 100%; max-width: none;
+      box-shadow: none;
+    }
+    body:has(.bigPlayer.bigPlayerInline) #vk_wrap { padding-bottom: 0; }
+
+    .bigPlayerWrapper { position: relative; display: flex; align-items: center; gap: 10px; padding: 7px 10px; min-height: 44px; }
+
+    .playButtons { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+    .playButton {
+      width: 32px; height: 32px; border-radius: 50%; background: #ffffff; color: #2c3e50;
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
+    }
+    .playButton::before {
+      content: ""; width: 0; height: 0; margin-left: 2px; border-style: solid;
+      border-width: 6px 0 6px 9px; border-color: transparent transparent transparent #2c3e50;
+    }
+    .playButton.pause::before {
+      width: 9px; height: 11px; margin-left: 0; border: none;
+      background: linear-gradient(#2c3e50, #2c3e50) 0 0/3px 11px no-repeat, linear-gradient(#2c3e50, #2c3e50) 6px 0/3px 11px no-repeat;
+    }
+    .arrowsButtons { display: flex; }
+    .nextButton, .backButton {
+      width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: #cbd6e2;
+    }
+    .nextButton:hover, .backButton:hover { background: rgba(255, 255, 255, .12); color: #ffffff; }
+    .nextButton.lagged, .backButton.lagged { opacity: .35; pointer-events: none; }
+    /* Внимание: в официальном al_music.js названия классов перепутаны
+       местами с их функцией — клик по .nextButton вызывает
+       playPreviousTrack(), а по .backButton — playNextTrack(). Класс
+       переименовывать нельзя (сломает обработчики), поэтому визуально
+       рисуем стрелки по их РЕАЛЬНОМУ действию: .nextButton (стоит первым,
+       слева) — как «назад», .backButton (справа) — как «вперёд». */
+    .nextButton::before, .backButton::before { content: ""; display: block; width: 0; height: 0; border-style: solid; border-color: transparent; }
+    .nextButton::before { border-width: 5px 8px 5px 0; border-right-color: currentColor; }
+    .backButton::before { border-width: 5px 0 5px 8px; border-left-color: currentColor; }
+
+    .trackPanel { flex: 1; min-width: 0; }
+    .trackInfo { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 11.5px; margin-bottom: 4px; }
+    .trackName { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #dce6f0; }
+    .trackName .trackPerformers a { color: #ffffff; font-weight: bold; text-decoration: none; }
+    .trackName .trackPerformers a:hover { text-decoration: underline; }
+    .timer { flex-shrink: 0; display: flex; gap: 3px; color: #9fb0c2; white-space: nowrap; }
+    .timer .elapsedTime { cursor: pointer; }
+    .timer .elapsedTime:hover { color: #ffffff; }
+
+    .trackPanel .track { position: relative; height: 4px; background: rgba(255, 255, 255, .18); border-radius: 2px; }
+    .trackPanel .selectableTrack { position: absolute; inset: 0; border-radius: 2px; cursor: pointer; }
+    .trackPanel .selectableTrackLoadProgress .load_bar { position: absolute; inset: 0; width: 0; background: rgba(255, 255, 255, .35); border-radius: 2px; }
+    .trackPanel .slider {
+      position: absolute; top: 50%; left: 0; width: 10px; height: 10px; margin: -5px 0 0 -5px;
+      background: #ffffff; border-radius: 50%; box-shadow: 0 0 0 1px #5b7fa6;
+    }
+
+    .volumePanel { flex-shrink: 0; width: 56px; }
+    .volumePanelTrack { position: relative; height: 4px; background: rgba(255, 255, 255, .18); border-radius: 2px; }
+    .volumePanel .selectableTrack { position: absolute; inset: 0; border-radius: 2px; cursor: pointer; }
+    .volumePanel .slider {
+      position: absolute; top: 50%; left: 0; width: 10px; height: 10px; margin: -5px 0 0 -5px;
+      background: #ffffff; border-radius: 50%; box-shadow: 0 0 0 1px #5b7fa6;
+    }
+
+    .additionalButtons { display: flex; gap: 2px; flex-shrink: 0; }
+    .additionalButtons > div {
+      width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: #9fb0c2; font-size: 11px;
+    }
+    .additionalButtons > div:hover { background: rgba(255, 255, 255, .12); color: #ffffff; }
+    .additionalButtons > div.pressed { color: #7fb2ff; background: rgba(110, 168, 255, .18); }
+    .repeatButton::before { content: "\21BB"; }
+    .shuffleButton::before { content: "\1F500"; font-size: 10px; }
+    .deviceButton::before { content: "\1F50A"; font-size: 10px; }
+    .deviceButton.pressed::before { content: "\1F507"; }
+
+    .absoluteButtons { position: absolute; top: 3px; right: 6px; }
+    #summarySwitchButton {
+      width: 16px; height: 16px; border-radius: 50%; background: rgba(255, 255, 255, .14); color: #cbd6e2;
+      display: flex; align-items: center; justify-content: center; font-size: 11px; line-height: 1; cursor: pointer;
+    }
+    #summarySwitchButton:hover { background: rgba(255, 255, 255, .24); color: #ffffff; }
+
+    #album_info { display: none; }
+    .bigPlayer.album_shown #album_info { display: flex; padding: 0 10px 7px 52px; }
+    #album_info a { display: flex; align-items: center; gap: 6px; min-width: 0; color: #9fb0c2; text-decoration: none; font-size: 11px; }
+    #album_info a:hover { color: #ffffff; }
+    #album_info img { width: 18px; height: 18px; border-radius: 2px; object-fit: cover; flex-shrink: 0; }
+    #album_embed_name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* --- мини-плеер в левом сайдбаре на ПК / плавающий снизу на мобильных --- */
+    @media screen and (min-width: 561px) {
+      #sidebar_menu {
+        display: flex !important;
+        flex-direction: column !important;
+        overflow: hidden !important;
+      }
+      #sidebar_menu .menu-user,
+      #sidebar_menu .main-nav,
+      #sidebar_menu .menu-foot {
+        flex-shrink: 0;
+      }
+      #sidebar_menu .main-nav {
+        overflow-y: auto;
+        flex: 1 1 auto;
+        margin: 0;
+        padding: 0;
+      }
+      #sidebar_audio_player_slot {
+        flex-shrink: 0;
+      }
+      #ajax_audio_player {
+        position: relative !important;
+        left: auto !important;
+        right: auto !important;
+        top: auto !important;
+        bottom: auto !important;
+        transform: none !important;
+        width: 100% !important;
+        max-width: none !important;
+        box-shadow: none !important;
+        border-top: 1px solid var(--color-border-section) !important;
+        background: #2c3e50;
+        z-index: 10;
+      }
+    }
+
+    @media screen and (max-width: 560px) {
+      #ajax_audio_player {
+        position: fixed !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        top: auto !important;
+        transform: none !important;
+        width: 100% !important;
+        max-width: 560px !important;
+        z-index: 150;
+        background: #2c3e50;
+        color: #ffffff;
+        border-top: 1px solid #3d566e;
+        box-shadow: 0 -2px 10px rgba(0, 0, 0, .25);
+      }
+      body:has(#ajax_audio_player:not(.hidden)) #vk_wrap { padding-bottom: 50px; }
+    }
+    #ajax_audio_player.hidden { display: none; }
+
+    #aj_player { display: flex; align-items: stretch; }
+    #aj_player_internal_controls { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 6px 8px; }
+
+    #aj_player_play_btn {
+      width: 30px; height: 30px; flex-shrink: 0; border-radius: 50%; background: #ffffff; color: #2c3e50;
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
+    }
+    #aj_player_play_btn::before {
+      content: ""; width: 0; height: 0; margin-left: 2px; border-style: solid;
+      border-width: 6px 0 6px 9px; border-color: transparent transparent transparent #2c3e50;
+    }
+    #aj_player_play_btn.paused::before {
+      width: 9px; height: 11px; margin-left: 0; border: none;
+      background: linear-gradient(#2c3e50, #2c3e50) 0 0/3px 11px no-repeat, linear-gradient(#2c3e50, #2c3e50) 6px 0/3px 11px no-repeat;
+    }
+
+    #aj_player_track { flex: 1; min-width: 0; }
+    #aj_player_track_name { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 11.5px; margin-bottom: 3px; }
+    #aj_player_track_title { display: flex; gap: 4px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #dce6f0; text-decoration: none; cursor: pointer; }
+    #aj_player_track_title b { color: #ffffff; }
+    #aj_player_track_title .tire { color: #9fb0c2; }
+    #aj_time { flex-shrink: 0; color: #9fb0c2; cursor: pointer; }
+    #aj_time:hover { color: #ffffff; }
+
+    #aj_player_track_length { position: relative; height: 4px; background: rgba(255, 255, 255, .18); border-radius: 2px; cursor: pointer; }
+    #aj_player_track_length .selectableTrack { position: absolute; inset: 0; }
+    #aj_player_track_length .slider {
+      position: absolute; top: 50%; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px;
+      background: #ffffff; border-radius: 50%; box-shadow: 0 0 0 1px #5b7fa6;
+    }
+
+    /* громкость доступна в полном плеере (.bigPlayer) — в компактной
+       плавающей плашке прячем, чтобы не перегружать узкий мобильный экран */
+    #aj_player_volume { display: none; }
+
+    /* Точечная правка: в плавающем миниплеере (#ajax_audio_player) оставляем
+       только название трека, Play/Pause и крестик закрытия. Остальные
+       элементы скрываем только визуально (display:none) — сама разметка
+       и обработчики al_music.js не трогаются и продолжают работать. */
+    #aj_time,
+    #aj_player_track_length,
+    #aj_player_buttons { display: none; }
+
+    #aj_player_buttons { display: flex; align-items: center; gap: 1px; flex-shrink: 0; }
+    #aj_player_previous, #aj_player_next, #aj_player_repeat {
+      width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: #cbd6e2;
+    }
+    #aj_player_previous:hover, #aj_player_next:hover, #aj_player_repeat:hover { background: rgba(255, 255, 255, .12); color: #ffffff; }
+    #aj_player_previous.lagged, #aj_player_next.lagged { opacity: .35; pointer-events: none; }
+    #aj_player_previous::before, #aj_player_next::before { content: ""; display: block; width: 0; height: 0; border-style: solid; border-color: transparent; }
+    #aj_player_previous::before { border-width: 4px 6px 4px 0; border-right-color: currentColor; }
+    #aj_player_next::before { border-width: 4px 0 4px 6px; border-left-color: currentColor; }
+    #aj_player_repeat::before { content: "\21BB"; font-size: 12px; }
+    #aj_player_repeat.pressed { color: #7fb2ff; background: rgba(110, 168, 255, .18); }
+
+    #aj_player_close_btn {
+      flex-shrink: 0; width: 28px; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: #9fb0c2; border-left: 1px solid #3d566e;
+    }
+    #aj_player_close_btn::before { content: "\2715"; font-size: 11px; }
+    #aj_player_close_btn:hover { background: rgba(255, 255, 255, .1); color: #ffffff; }
+
+    /* список очереди, который al_music.js дописывает в #aj_player —
+       на узком мобильном экране прячем, очередь и так видна на /audios */
+    #aj_player_tracks { display: none; }
+
+    /* --- плейлисты: строка списка (playlistListView.xml) --- */
+    .playlistListView { display: flex; gap: 10px; align-items: center; padding: 10px; background: var(--color-background); border-bottom: 1px solid var(--color-border-list); text-decoration: none; }
+    .playlistListView:hover { background: var(--color-background-secondary); }
+    .playlistListView .playlistCover { flex-shrink: 0; width: 52px; height: 52px; border-radius: 3px; overflow: hidden; background: var(--color-background-secondary); }
+    .playlistListView .playlistCover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .playlistListView .playlistInfo { flex: 1; min-width: 0; }
+    .playlistListView .playlistInfoTopPart { display: flex; flex-direction: column; }
+    .playlistListView .playlistName { font-weight: bold; color: var(--color-primary-strong); font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .playlistListView .playlistDesc { font-size: 12px; color: var(--color-text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 1px; }
+    .playlistListView .playlistMeta { display: block; font-size: 11px; color: var(--color-text-tertiary); margin-top: 3px; }
+
+    /* --- плейлист: страница просмотра (Playlist.xml) --- */
+    .playlistBlock { display: flex; flex-direction: column; }
+    .playlistBlock > .playlistCover { padding: 14px 14px 10px; text-align: center; background: var(--color-background-secondary); border-bottom: 1px solid var(--color-border-list); }
+    .playlistBlock > .playlistCover img { width: 160px; height: 160px; object-fit: cover; border-radius: 4px; background: var(--color-background-secondary); }
+    .playlistBlock > .playlistCover .profile_links { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 10px; }
+    .playlistWrapper .playlistInfo { padding: 12px 12px 4px; }
+    .playlistWrapper .playlistInfo h4 { margin: 0; font-size: 16px; color: var(--color-text-strong); }
+    .playlistWrapper .moreInfo { margin-top: 6px; font-size: 12px; color: var(--color-text-secondary); line-height: 1.5; }
+    .playlistWrapper .moreInfo hr { border: 0; border-top: 1px solid var(--color-border-list); margin: 10px 0 0; }
+
+    /* --- новый/редактируемый плейлист (NewPlaylist.xml, EditPlaylist.xml) --- */
+    .PE_wrapper { background: var(--color-background); }
+    .PE_playlistEditPage { display: flex; gap: 12px; padding: 12px; border-bottom: 1px solid var(--color-border-list); }
+    .PE_playlistEditPage .playlistCover { flex-shrink: 0; width: 96px; }
+    .PE_playlistEditPage .playlistCover img { width: 96px; height: 96px; object-fit: cover; border-radius: 4px; background: var(--color-background-secondary); cursor: pointer; display: block; }
+    .PE_playlistEditPage .playlistCover .profile_links { margin-top: 8px; display: flex; flex-direction: column; gap: 5px; }
+    .PE_playlistEditPage .playlistCover .profile_links a { width: 100% !important; box-sizing: border-box; }
+    .PE_playlistInfo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+    .PE_playlistInfo input[type="text"], .PE_playlistInfo textarea {
+      width: 100%; box-sizing: border-box; padding: 7px 9px; border: 1px solid var(--color-border-input); border-radius: 3px; font-size: 13px; background: var(--color-background);
+    }
+    .PE_playlistInfo textarea { min-height: 60px; resize: vertical; }
+    .PE_playlistInfo label { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--color-text-form); }
+    .PE_playlistInfo #_playlistAppendTracks { display: inline-block; font-size: 12.5px; color: var(--color-primary-strong); text-decoration: none; }
+    .PE_playlistInfo #_playlistAppendTracks:hover { text-decoration: underline; }
+
+    .PE_audios.generic_audio_list { background: var(--color-background-secondary); }
+    .vertical-attachment { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--color-border-list); }
+    .vertical-attachment .vertical-attachment-content { flex: 1; min-width: 0; }
+    .vertical-attachment .vertical-attachment-remove { flex-shrink: 0; }
+    .vertical-attachment.currently_dragging { opacity: .4; }
+    #small_remove_button {
+      width: 22px; height: 22px; cursor: pointer; border-radius: 50%; background: var(--color-background-secondary) center/12px no-repeat;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%236a829e'><path d='M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.75.75 0 1 1 1.06 1.06L9.06 8l3.22 3.22a.75.75 0 1 1-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 0 1-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06z'/></svg>");
+    }
+    .PE_end { padding: 12px; text-align: center; }
+
+    #modal_overlay {
+      display: none; position: fixed; inset: 0; background: var(--color-overlay);
+      z-index: 400; align-items: center; justify-content: center; padding: 12px; backdrop-filter: blur(1px);
+    }
+    #modal_overlay.active { display: flex; }
+    #post_edit_overlay {
+      display: none; position: fixed; inset: 0; background: var(--color-overlay);
+      z-index: 430; align-items: center; justify-content: center; padding: 12px;
+    }
+    #post_edit_overlay.active { display: flex; }
+    #status_edit_overlay {
+      display: none; position: fixed; inset: 0; background: var(--color-overlay);
+      z-index: 430; align-items: center; justify-content: center; padding: 12px;
+    }
+    #status_edit_overlay.active { display: flex; }
+    #status_edit_input {
+      padding: 8px 10px; border: 1px solid var(--color-border-input); border-radius: 3px; font-size: 13px;
+    }
+    .modal-box {
+      background: var(--color-background); border-radius: 3px; width: 100%; max-width: 380px;
+      overflow: hidden; box-shadow: 0 4px 20px var(--color-shadow-strong); border: 1px solid var(--color-primary-strong);
+    }
+    .modal-head {
+      background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-strong) 100%); color: var(--color-background);
+      padding: 9px 12px; font-weight: bold; font-size: 13px; text-shadow: 0 -1px 0 var(--color-primary-shadow);
+      border-bottom: 1px solid var(--color-primary-strong); box-shadow: inset 0 1px 0 var(--color-highlight-inset);
+      line-height: 1.35; letter-spacing: -0.1px;
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    }
+    .modal-body { padding: 12px; font-size: 13px; max-height: 80vh; overflow-y: auto; background: var(--color-background); }
+    .modal-foot { padding: 8px 12px; background: var(--color-background-secondary); display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--color-border); }
+
+    #actionsheet_overlay, #post_actions_overlay, #video_actions_overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 410; backdrop-filter: blur(1px);
+    }
+    #actionsheet_overlay.active, #post_actions_overlay.active, #video_actions_overlay.active { display: block; }
+    #post_actions_overlay, #video_actions_overlay { z-index: 420; }
+    #post_actions_sheet, #video_actions_sheet { z-index: 421; }
+    .actionsheet-panel {
+      position: fixed; bottom: 0; left: 50%; transform: translate(-50%, 105%);
+      width: 100%; max-width: 560px; background: var(--color-background); z-index: 411;
+      border-radius: 8px 8px 0 0; overflow: hidden; transition: transform 0.24s cubic-bezier(0.1, 0.8, 0.1, 1);
+      border: 1px solid var(--color-primary-strong); border-bottom: none;
+      box-shadow: 0 -4px 20px var(--color-shadow-strong);
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .actionsheet-panel.active {
+      transform: translate(-50%, 0);
+      visibility: visible;
+      pointer-events: auto;
+    }
+    /* .actionsheet-head — визуальный стиль .modal-head */
+    .actionsheet-head {
+      background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-strong) 100%); color: var(--color-background);
+      padding: 9px 12px; font-weight: bold; font-size: 13px; text-shadow: 0 -1px 0 var(--color-primary-shadow);
+      border-bottom: 1px solid var(--color-primary-strong); box-shadow: inset 0 1px 0 var(--color-highlight-inset);
+      line-height: 1.35; letter-spacing: -0.1px;
+    }
+    /* .actionsheet-list — визуальная логика .modal-body (белый фон, скролл у длинного списка) */
+    .actionsheet-list { max-height: 60vh; overflow-y: auto; background: var(--color-background); }
+    .actionsheet-list li { border-bottom: 1px solid var(--color-border-list); }
+    .actionsheet-list li a { display: flex; align-items: center; gap: 12px; padding: 12px 16px; font-size: 14px; color: var(--color-primary-strong); font-weight: bold; text-decoration: none; }
+    .actionsheet-list li a:hover { background: var(--color-background-secondary); }
+    /* .actionsheet-cancel — визуальная логика .modal-foot (тот же фон/бордер), но как единая
+       кнопка на всю ширину — так удобнее нажимать пальцем на мобильном экране */
+    .actionsheet-cancel { padding: 13px; text-align: center; background: var(--color-background-secondary); font-weight: bold; color: var(--color-text-secondary); cursor: pointer; border-top: 1px solid var(--color-border); }
+
+    .set-group { padding: 12px 10px; border-bottom: 1px solid var(--color-border-list); background: var(--color-background); }
+    .set-group label { display: block; font-size: 11px; font-weight: bold; color: var(--color-text-muted); text-transform: uppercase; margin-bottom: 6px; }
+    .set-group input[type="text"], .set-group input[type="email"], .set-group input[type="password"], .set-group select, .set-group textarea {
+      width: 100%; padding: 7px; border: 1px solid var(--color-border-input); border-radius: 3px; background: var(--color-background); font-size: 13px; color: var(--color-text-dark); outline: none;
+    }
+    .set-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .set-val { font-size: 13px; font-weight: bold; color: var(--color-text-dark); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .wall-post-full { padding: 12px 10px; background: var(--color-background); border-bottom: 1px solid var(--color-border); }
+    .wp-author-box { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .wp-author-box img { width: 44px; height: 44px; border-radius: 3px; object-fit: cover; background: var(--color-border); flex-shrink: 0; }
+    .wp-author-box .name { font-weight: bold; color: var(--color-primary-strong); font-size: 14px; }
+    .wp-author-box .date { font-size: 11px; color: var(--color-text-tertiary); margin-top: 2px; }
+    .wp-text { font-size: 14px; line-height: 1.45; color: var(--color-text-dark); margin-bottom: 12px; word-break: break-word; }
+    .wp-actions-bar { display: flex; gap: 8px; padding: 10px 0; border-top: 1px solid var(--color-border-list); border-bottom: 1px solid var(--color-border-list); }
+
+    .comment-item { padding: 10px; border-bottom: 1px solid var(--color-border-list); display: flex; gap: 9px; background: var(--color-background); }
+    .comment-item img.avatar { width: 32px; height: 32px; border-radius: 2px; flex-shrink: 0; object-fit: cover; background: var(--color-border); }
+    .comment-item .c-body { flex: 1; min-width: 0; }
+    .comment-item .c-author { font-weight: bold; color: var(--color-primary-strong); font-size: 12px; }
+    .comment-item .c-text { font-size: 13px; line-height: 1.35; color: var(--color-text-strong); margin-top: 2px; word-break: break-word; }
+    .comment-item .c-foot { font-size: 11px; color: var(--color-text-tertiary); margin-top: 4px; display: flex; gap: 8px; }
+
+    .chat-history { padding: 12px 10px; background: var(--color-background-secondary); display: flex; flex-direction: column; gap: 8px; min-height: 320px; max-height: 480px; overflow-y: auto; }
+    .chat-msg { max-width: 84%; padding: 8px 11px; border-radius: 4px; font-size: 13px; line-height: 1.38; word-break: break-word; }
+    .chat-msg.in { align-self: flex-start; background: var(--color-background); border: 1px solid var(--color-border); color: var(--color-text-dark); }
+    .chat-msg.out { align-self: flex-end; background: #e3ecf5; border: 1px solid #cad9e8; color: var(--color-text-dark); }
+    .chat-msg .time { font-size: 10px; color: #8da4bb; text-align: right; margin-top: 4px; }
+    .chat-sendbar { display: flex; gap: 6px; padding: 8px 10px; background: #eaedf2; border-top: 1px solid #d6dde4; }
+    .chat-sendbar input { flex: 1; padding: 7px 9px; border: 1px solid #c2cbd5; border-radius: 3px; background: var(--color-background); }
+
+    .grid-media { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; padding: 4px; background: var(--color-background-hover); }
+    .grid-media-item { position: relative; padding-bottom: 100%; background: var(--color-background-secondary); overflow: hidden; cursor: pointer; border-radius: 2px; }
+    .grid-media-item img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+    #toast {
+      position: fixed;
+      top: 50px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-10px);
+      width: calc(100% - 16px);
+      max-width: 540px;
+      box-sizing: border-box;
+      padding: 9px 12px;
+      font-size: 13px;
+      line-height: 1.35;
+      z-index: 500;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+      border-radius: 0;
+      cursor: pointer;
+      color: var(--color-text-dark);
+    }
+    #toast.show {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(-50%) translateY(0);
+    }
+    #toast.red {
+      background: #faebeb;
+      border: 1px solid #8e2b43;
+    }
+    #toast.green {
+      background: #ebfaeb;
+      border: 1px solid #448043;
+    }
+    #toast .toast-title {
+      font-weight: bold;
+      font-size: 13px;
+      color: var(--color-text-dark);
+      line-height: 1.3;
+    }
+    #toast .toast-text {
+      font-size: 12px;
+      color: var(--color-text-dark);
+      margin-top: 2px;
+      line-height: 1.35;
+    }

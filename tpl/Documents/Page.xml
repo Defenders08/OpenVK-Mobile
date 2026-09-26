@@ -1,0 +1,137 @@
+{*  =========================================================
+    DOCUMENT PAGE — страница документа (/doc{owner}_{id}).
+
+    $doc, $tags, $modifiable, $copied, $copyImportance.
+
+    Как показывать файл, решают методы самого документа:
+    isGif() / isImage() / isAudio(). Иначе — кнопка скачивания.
+
+    ХУКИ JS (al_docs.js) — НЕ УДАЛЯТЬ:
+      class="docMainItem" + data-context="page" + data-id;
+      id="edit_icon", "report_icon", "add_icon", "remove_icon".
+
+    ВИЗУАЛ: страница переоформлена под mobile-classic —
+    тёмная область предпросмотра, как в экранах фото/видео
+    из вёрстки. Исходные классы сохранены.
+    ========================================================= *}
+
+{extends "../@layout.xml"}
+
+{block title}{_document} "{ovk_proc_strtr($doc->getName(), 20)}"{/block}
+
+{block headIncludes}
+    {var $docPreview = $doc->isImage() ? $doc->getPreview()->getURLBySizeId('normal') : ($doc->isGif() ? $doc->getURL() : '')}
+    <meta property="og:title" content="{_document}: {$doc->getName()} — {$instance_name}" />
+    <meta property="og:url" content="{$baseUrl}/doc{$doc->getPrettiestId()}" />
+    <meta property="og:type" content="article" />
+    <meta n:if="!empty($docPreview)" property="og:image" content="{$docPreview}" />
+    <meta name="twitter:title" content="{_document}: {$doc->getName()} — {$instance_name}" />
+    <meta n:if="!empty($docPreview)" name="twitter:image" content="{$docPreview}" />
+{/block}
+
+{block header}{$doc->getName()}{/block}
+
+{block content}
+    <div class="media-page vkx-media-page">
+
+        <div class="media-page-media">
+            {if $doc->isGif()}
+                <img class="main_doc_block" src="{$doc->getURL()}" alt="{$doc->getName()}" />
+            {elseif $doc->isImage()}
+                <img class="main_doc_block" src="{$doc->getPreview()->getURLBySizeId('original')}" alt="{$doc->getName()}" />
+            {elseif $doc->isAudio()}
+                <audio src="{$doc->getURL()}" controls></audio>
+            {else}
+                {* downloadable_name() — штатная функция OpenVK:
+                   она делает имя файла безопасным для скачивания. *}
+                <a href="{$doc->getURL()}" download="{downloadable_name($doc->getName())}" class="button vkx-btn vkx-btn-primary">
+                    {_download_file}
+                </a>
+            {/if}
+        </div>
+
+        <div class="media-page-description">
+            <p n:if="sizeof($tags) > 0">
+                {foreach $tags as $tag}
+                    <a href="/search?section=docs&tags={urlencode($tag)}">{$tag}</a>{if $tag != $tags[sizeof($tags) - 1]},{/if}
+                {/foreach}
+            </p>
+
+            <div class="upload_time">{_info_upload_date}: {$doc->getPublicationTime()}</div>
+        </div>
+
+        <div class="media-page-actions docMainItem" data-context="page" data-id="{$doc->getPrettiestId()}">
+
+            {* Владельца можно скрыть при загрузке документа. *}
+            {if !$doc->isOwnerHidden()}
+                {var $owner = $doc->getOwner()}
+                <a href="{$owner->getURL()}" class="media-page-author-block">
+                    <img class="cCompactAvatars" src="{$owner->getAvatarURL('miniscule')}" alt="" />
+                    <b>{$owner->getCanonicalName()}</b>
+                </a>
+            {/if}
+
+            {if isset($thisUser)}
+                <div class="vkx-media-page-actions-btns">
+                    <a n:if="$modifiable" class="profile_link vkx-btn vkx-btn-secondary" id="edit_icon">{_edit}</a>
+                    <a n:if="!$modifiable" class="profile_link vkx-btn vkx-btn-secondary" id="report_icon">{_report}</a>
+                    <a n:if="!$copied || $copied && $copyImportance" class="profile_link vkx-btn vkx-btn-primary" id="add_icon">{_add}</a>
+                    <a n:if="$copied && !$copyImportance" class="profile_link vkx-btn vkx-btn-secondary" id="remove_icon">{_remove}</a>
+                </div>
+            {/if}
+
+        </div>
+
+    </div>
+
+    <style>
+        .vkx-media-page { background: var(--color-background); }
+        .vkx-media-page .media-page-media {
+            background: var(--color-text-dark); padding: 16px; text-align: center;
+        }
+        .vkx-media-page .media-page-media img.main_doc_block { max-width: 100%; height: auto; border-radius: 2px; }
+        .vkx-media-page .media-page-media audio { width: 100%; max-width: 480px; }
+        .vkx-media-page .media-page-description {
+            padding: 10px 12px; border-bottom: 1px solid var(--color-border-list); font-size: 13px; background: var(--color-background);
+        }
+        .vkx-media-page .media-page-description p { margin: 0 0 6px 0; }
+        .vkx-media-page .media-page-description p a { color: var(--color-primary-strong); text-decoration: none; }
+        .vkx-media-page .media-page-description p a:hover { text-decoration: underline; }
+        .vkx-media-page .upload_time { font-size: 11px; color: var(--color-text-tertiary); }
+        .vkx-media-page .media-page-actions {
+            display: flex; align-items: center; justify-content: space-between; gap: 10px;
+            padding: 10px 12px; flex-wrap: wrap; background: var(--color-background-secondary);
+        }
+        .vkx-media-page .media-page-author-block {
+            display: flex; align-items: center; gap: 8px; text-decoration: none; color: var(--color-primary-strong); font-weight: bold; font-size: 13px;
+        }
+        .vkx-media-page .media-page-author-block:hover { text-decoration: underline; }
+        .vkx-media-page .media-page-author-block img.cCompactAvatars {
+            width: 32px; height: 32px; border-radius: 3px; object-fit: cover; background: var(--color-border); flex-shrink: 0;
+        }
+        .vkx-media-page-actions-btns { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; }
+
+        .vkx-btn {
+            display: inline-block; padding: 6px 13px; font-size: 12px; font-weight: bold; border-radius: 2px;
+            text-align: center; line-height: 1.25; cursor: pointer; user-select: none; text-decoration: none !important;
+            transition: background 0.12s ease, transform 0.08s ease;
+        }
+        .vkx-btn-primary {
+            color: var(--color-background); background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-strong) 100%);
+            border: 1px solid var(--color-primary-strong); text-shadow: 0 -1px 0 var(--color-primary-shadow); box-shadow: inset 0 1px 0 var(--color-highlight-inset);
+        }
+        .vkx-btn-primary:hover { background: linear-gradient(180deg, var(--color-primary-light) 0%, var(--color-primary) 100%); border-color: var(--color-primary-strong); }
+        .vkx-btn-primary:active { background: var(--color-primary); transform: translateY(1px); }
+        .vkx-btn-secondary {
+            color: var(--color-primary-strong); background: linear-gradient(180deg, #f5f8fa 0%, #e6ebf0 100%);
+            border: 1px solid var(--color-border-input); box-shadow: inset 0 1px 0 var(--color-background);
+        }
+        .vkx-btn-secondary:hover { background: linear-gradient(180deg, #ffffff 0%, #edf1f6 100%); color: var(--color-primary-strong); }
+        .vkx-btn-secondary:active { background: var(--color-background-secondary); transform: translateY(1px); }
+
+        @media (max-width: 480px) {
+            .vkx-media-page .media-page-actions { flex-direction: column; align-items: stretch; }
+            .vkx-media-page-actions-btns { margin-left: 0; }
+        }
+    </style>
+{/block}

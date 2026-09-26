@@ -1,0 +1,14 @@
+{block content}
+<div class="vkx-notes">
+    <article class="vkx-note" style="flex-direction: column;">
+        <div class="note_title"><a>{$note->getName()}</a></div>
+        <div class="byline">
+            <span><a href="{$note->getOwner()->getURL()}">{$note->getOwner()->getCanonicalName()}</a></span> {$note->getPublicationTime()}
+            <span n:if="$note->getEditTime() > $note->getPublicationTime()">({_edited} {$note->getEditTime()})</span>
+        </div>
+        <div id="userContent" class="note_text">
+            {$note->getText()|noescape}
+        </div>
+    </article>
+</div>
+{/block}

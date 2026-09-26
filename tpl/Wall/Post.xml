@@ -1,0 +1,164 @@
+{extends "../@layout.xml"}
+
+{block title}{_post}{/block}
+
+{block headIncludes}
+    {var $postText = $post->getText(false)}
+    {var $postDesc = mb_strlen($postText) > 200 ? mb_substr($postText, 0, 197) . '...' : $postText}
+
+    {php $ogImageUrl = null}
+    {foreach $post->getChildren() as $child}
+        {if $child instanceof \openvk\Web\Models\Entities\Photo}
+            {php $ogImageUrl = $child->getURLBySizeId('normal')}
+            {breakIf true}
+        {/if}
+    {/foreach}
+
+    <meta property="og:title" content="{_post}: {$post->getOwner()->getCanonicalName()} — {$instance_name}" />
+    <meta property="og:url" content="{$baseUrl}/wall{$post->getPrettyId()}" />
+    <meta n:if="!empty($postDesc)" property="og:description" content="{$postDesc}" />
+    <meta n:if="!is_null($ogImageUrl)" property="og:image" content="{$ogImageUrl}" />
+    <meta property="og:type" content="article" />
+    <meta name="twitter:title" content="{_post} — {$instance_name}" />
+    <meta n:if="!empty($postDesc)" name="twitter:description" content="{$postDesc}" />
+    <meta n:if="!is_null($ogImageUrl)" name="twitter:image" content="{$ogImageUrl}" />
+    <meta n:if="!is_null($ogImageUrl)" n:attr="name => 'twitter:card'" content="summary_large_image" />
+{/block}
+
+{block header}
+    {_post}
+{/block}
+
+{block content}
+{var $author = $post->getOwner()}
+{var $platform = $post->getPlatform()}
+{var $platformDetails = $post->getPlatformDetails()}
+{var $likesCount = $post->getLikesCount()}
+{var $repostsCount = $post->getRepostCount()}
+{var $liked = isset($thisUser) ? $post->hasLikeFrom($thisUser) : false}
+{var $isPinned = $post->isPinned()}
+{var $isArchived = $post->isArchived()}
+{var $canBeEdited = isset($thisUser) && $post->canBeEditedBy($thisUser)}
+{var $canBeDeleted = isset($thisUser) && $post->canBeDeletedBy($thisUser)}
+{var $canBePinned = isset($thisUser) && $post->canBePinnedBy($thisUser)}
+{var $canBeArchived = isset($thisUser) && $post->canBeArchivedBy($thisUser)}
+
+<section id="sec_post_view" class="page-section active">
+    <article class="wall-post-full" data-id="{$post->getPrettyId()}">
+        
+        {* Шапка записи *}
+        <div class="wp-author-box">
+            <a href="{$author->getURL()}">
+                <img src="{$author->getAvatarURL('normal')}" alt="{$author->getCanonicalName()}">
+            </a>
+            <div style="flex: 1; min-width: 0;">
+                <div class="name">
+                    <a href="{$author->getURL()}" style="color: inherit; text-decoration: none;">{$author->getCanonicalName()}</a>
+                    <span n:if="$author->isVerified()" class="verified-check" title="{_verified_page}" onclick="event.stopPropagation(); showToast('{_verified_page}');">
+                        <svg viewBox="0 0 16 16" width="13" height="13" fill="none">
+                            <circle cx="8" cy="8" r="7.5" fill="#4d7198"/>
+                            <path d="M4.6 8.2l2.3 2.3 4.5-4.5" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </span>
+                </div>
+                <div class="date">
+                    {$post->getPublicationTime()}
+                    <span n:if="$post->getEditTime()" class="editedMark">({_edited_short})</span>
+                    {if !empty($platform)} • {$platformDetails['name'] ?? $platform}{/if}
+                </div>
+            </div>
+            
+            <button type="button" class="post-more-btn"
+                    data-post-id="{$post->getPrettyId()}"
+                    data-csrf="{rawurlencode($csrfToken)}"
+                    data-can-edit="{$canBeEdited ? 1 : 0}"
+                    data-can-delete="{$canBeDeleted ? 1 : 0}"
+                    data-can-report="{!$canBeDeleted ? 1 : 0}"
+                    data-can-pin="{$canBePinned ? 1 : 0}"
+                    data-is-pinned="{$isPinned ? 1 : 0}"
+                    data-can-archive="{$canBeArchived ? 1 : 0}"
+                    data-is-archived="{$isArchived ? 1 : 0}"
+                    onclick="event.stopPropagation(); openPostActionMenu(this)" title="{_actions}">
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
+                    <circle cx="4.5" cy="10" r="1.8"/>
+                    <circle cx="10" cy="10" r="1.8"/>
+                    <circle cx="15.5" cy="10" r="1.8"/>
+                </svg>
+            </button>
+        </div>
+
+        {* Текст записи *}
+        <div class="wp-text">
+            {$post->getText()|noescape}
+        </div>
+
+        {* Вложения *}
+        {var $attachmentsLayout = $post->getChildrenWithLayout(520)}
+        <div n:ifcontent class="post-attachments" style="margin: 8px 10px 0;">
+            <div n:ifcontent class="attachments attachments_b attachments-tiles"
+                 style="height: {$attachmentsLayout->height|noescape}; width: 100%;">
+                <div class="attachment" n:foreach="$attachmentsLayout->tiles as $attachment"
+                     style="float: {$attachment[3]|noescape}; width: {$attachment[0]|noescape}; height: {$attachment[1]|noescape};">
+                    {include "../components/attachment.xml", attachment => $attachment[2], parent => $post, parentType => "post", tilesCount => sizeof($attachmentsLayout->tiles)}
+                </div>
+            </div>
+            <div n:ifcontent class="attachments attachments_m">
+                <div class="attachment" n:foreach="$attachmentsLayout->extras as $attachment">
+                    {include "../components/attachment.xml", attachment => $attachment, post => $post}
+                </div>
+            </div>
+        </div>
+
+
+        {* Панель действий *}
+        <div class="wp-actions-bar">
+            {if isset($thisUser)}
+                <a class="post-btn post-like-button {if $liked}active{/if}"
+                   href="/wall{$post->getPrettyId()}/like?hash={rawurlencode($csrfToken)}"
+                   data-liked="{(int) $liked}" data-likes="{$likesCount}"
+                   data-id="{$post->getPrettyId()}" data-type="post">
+                    <svg class="post-icon heart" id="{if $liked}liked{/if}" viewBox="0 0 16 16" width="12" height="12" fill="currentColor">
+                        <path d="M8 13.7l-1.05-.96C3.23 9.38 1 7.36 1 4.85 1 2.82 2.6 1.25 4.6 1.25c1.13 0 2.22.53 2.9 1.36.68-.83 1.77-1.36 2.9-1.36 2 0 3.6 1.57 3.6 3.6 0 2.51-2.23 4.53-5.95 7.89L8 13.7z"/>
+                    </svg>
+                    <b class="likeCnt">{if $likesCount > 0}{$likesCount}{/if}</b>
+                </a>
+            {else}
+                <span class="post-btn">
+                    <svg class="post-icon" viewBox="0 0 16 16" width="12" height="12" fill="currentColor">
+                        <path d="M8 13.7l-1.05-.96C3.23 9.38 1 7.36 1 4.85 1 2.82 2.6 1.25 4.6 1.25c1.13 0 2.22.53 2.9 1.36.68-.83 1.77-1.36 2.9-1.36 2 0 3.6 1.57 3.6 3.6 0 2.51-2.23 4.53-5.95 7.89L8 13.7z"/>
+                    </svg>
+                    <b>{$likesCount > 0 ? $likesCount : 0}</b>
+                </span>
+            {/if}
+
+            <button type="button"
+                    class="post-btn"
+                    onclick="document.getElementById('standaloneCommentBox') ? document.getElementById('standaloneCommentBox').querySelector('textarea').focus() : null">
+                <svg class="post-icon" viewBox="0 0 16 16" width="12" height="12" fill="currentColor">
+                    <path d="M14 2H2C1 2 0 3 0 4.2v6.5C0 12 1 13 2 13h2v2.5l3.5-2.5H14c1 0 2-1 2-2.3V4.2C16 3 15 2 14 2zm-9.5 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm3.5 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm3.5 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/>
+                </svg>
+                <span>{_reply}</span>
+            </button>
+
+            <a n:if="isset($thisUser)" class="post-btn post-share-btn" id="reposts{$post->getPrettyId()}"
+               href="javascript:void(0)" onclick="repost('{$post->getPrettyId()}', 'post')">
+                <svg class="post-icon" viewBox="0 0 16 16" width="12" height="12" fill="currentColor">
+                    <path d="M13 7.5L7 2v3.3C2.8 5.8 0.6 8.7 0 14c1.8-2.4 4-3.5 7-3.5v3.5L13 7.5z"/>
+                </svg>
+                <b class="sh-cnt" id="repostsCount{$post->getPrettyId()}">{if $repostsCount > 0}{$repostsCount}{/if}</b>
+            </a>
+        </div>
+    </article>
+
+    {* Список комментариев — настоящий переиспользуемый компонент:
+       реальные лайки/ответы/редактирование/удаление комментариев,
+       реальная форма с вложениями (textArea.xml), пагинация. *}
+    {include "../components/comments.xml",
+             comments => $comments,
+             count => $cCount,
+             page => $cPage,
+             model => "posts",
+             parent => $post,
+             sort => $sort}
+</section>
+{/block}

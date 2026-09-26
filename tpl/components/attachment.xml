@@ -1,0 +1,51 @@
+{default $parentType = "post"}
+{default $tilesCount = 1}
+
+{if $attachment instanceof \openvk\Web\Models\Entities\Photo}
+    <a href="{$attachment->getURL()}" 
+       class="attachment-photo-link" 
+       onclick="event.stopPropagation(); if (typeof showPhoto === 'function') { showPhoto('{$attachment->getPrettyId()}'); return false; }">
+        <img src="{$attachment->getURL('medium')}" 
+             alt="{$attachment->getDescription() ?? ''}" 
+             style="width: 100%; height: 100%; object-fit: cover; display: block;" />
+    </a>
+
+{elseif $attachment instanceof \openvk\Web\Models\Entities\Video}
+    <div class="attachment-video">
+        <a href="{$attachment->getURL()}" onclick="event.stopPropagation();">
+            <img src="{$attachment->getThumbnailURL()}" style="width: 100%; display: block;" />
+            <span class="video-duration" n:if="method_exists($attachment, 'getDuration')">{$attachment->getDuration()}</span>
+            <span class="video-title">{$attachment->getTitle()}</span>
+        </a>
+    </div>
+
+{elseif $attachment instanceof \openvk\Web\Models\Entities\Audio}
+    {* Настоящий плеер OpenVK, а не заглушка: тот же player.xml,
+       что и в разделе аудиозаписей, со всеми data-атрибутами
+       (data-url, data-keys, data-length...), которые читает
+       window.player (al_music.js). Клик по строке запускает
+       реальное воспроизведение через тот же делегированный
+       обработчик ".audioEntry .playerButton .playIcon". *}
+    <div style="width:100%;" data-att_type='audio' data-att_id="{$attachment->getPrettyId()}">
+        {include "../Audio/player.xml", audio => $attachment}
+    </div>
+
+{elseif $attachment instanceof \openvk\Web\Models\Entities\Document}
+    <div class="attachment-document">
+        <a href="{$attachment->getDownloadURL()}" target="_blank">
+            <span class="doc-icon"></span>
+            <span class="doc-title">{$attachment->getTitle()}</span>
+            <span class="doc-size" n:if="method_exists($attachment, 'getReadableSize')">({$attachment->getReadableSize()})</span>
+        </a>
+    </div>
+
+{elseif $attachment instanceof \openvk\Web\Models\Entities\Poll}
+    <div class="attachment-poll">
+        {presenter "openvk!Poll->view", $attachment->getId()}
+    </div>
+
+{else}
+    {if method_exists($attachment, 'getURL')}
+        <a href="{$attachment->getURL()}">{$attachment->getTitle() ?? 'Attachment'}</a>
+    {/if}
+{/if}

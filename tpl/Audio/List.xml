@@ -1,0 +1,318 @@
+{extends "../@layout.xml"}
+
+{block title}
+    {if $mode == 'list'}
+        {if $ownerId > 0}
+            {_audios} {$owner->getFirstName("genitive", false, false)}
+        {else}
+            {_audios_group}
+        {/if}
+    {elseif $mode == 'new'}
+        {_audio_new}
+    {elseif $mode == 'uploaded'}
+        {_my_audios_small_uploaded}
+    {elseif $mode == 'popular'}
+        {_audio_popular}
+    {elseif $mode == 'alone_audio'}
+        {$alone_audio->getName()}
+    {else}
+        {if $ownerId > 0}
+            {_playlists} {$owner->getFirstdName("genitive", false, false)}
+        {else}
+            {_playlists_group}
+        {/if}
+    {/if}
+{/block}
+
+{block header}
+    <div n:if="$mode == 'list'">
+        <div n:if="$isMy">{_my_audios_small}</div>
+        <div n:if="!$isMy">
+            <a href="{$owner->getURL()}">{_audios}</a>
+        </div>
+    </div>
+
+    <div n:if="$mode == 'uploaded'">
+        {_my_audios_small_uploaded}
+    </div>
+
+    <div n:if="$mode == 'new'">
+        {_audio_new}
+    </div>
+
+    <div n:if="$mode == 'popular'">
+        {_audio_popular}
+    </div>
+
+    <div n:if="$mode == 'playlists'">
+        {if $isMy}{_my_playlists}{else}{_playlists}{/if}
+    </div>
+
+    <div n:if="$mode == 'alone_audio'">
+        {_my_audios_small}
+    </div>
+{/block}
+
+{block content}
+    {* Мобильный вид раздела аудиозаписей темы: та же логика Presenter'а
+       и те же переменные/шаблоны (player.xml, bigplayer.xml,
+       playlistListView.xml, paginator.xml, content_error.xml),
+       что и в оригинале — переставлена и переоформлена только вёрстка,
+       чтобы получить один вертикальный столбец вместо двухколоночной
+       десктопной раскладки (список + боковой verticalGrayTabs). *}
+
+    {* «Мои аудиозаписи» (mode=list && isMy): полноценный плеер переносим
+       под вкладки, во внутренний поток страницы (см. .bigPlayerInline
+       в @layout.xml). На остальных режимах поведение не меняется. *}
+    {if !($mode === 'list' && $isMy)}
+        {include "bigplayer.xml", buttonsShow_summary => $audiosCount > 10}
+    {/if}
+
+    <script>
+        window.__current_page_audio_context = null
+        {if $mode == 'list'}
+            window.__current_page_audio_context = {
+                name: 'entity_audios',
+                entity_id: {$ownerId},
+                page: {$page}
+            }
+        {elseif $mode == 'uploaded'}
+            window.__current_page_audio_context = {
+                name: 'uploaded',
+                entity_id: 0,
+                page: {$page}
+            }
+        {elseif $mode == 'alone_audio'}
+            window.__current_page_audio_context = {
+                name: 'alone_audio',
+                entity_id: {$alone_audio->getId()},
+                page: 1
+            }
+        {/if}
+    </script>
+
+    {include "tabs.xml"}
+
+    {if $mode === 'list' && $isMy}
+        {include "bigplayer.xml", buttonsShow_summary => $audiosCount > 10, inlineFull => true}
+    {/if}
+
+    {* Живой поиск по текущему списку (только там, где вообще есть список
+       треков — не в режиме playlists). Работает через настоящий
+       AJAX-маршрут OpenVK /audios/context (classic_search_context —
+       тот же самый, что использует Audios::find() на странице
+       /search?section=audios), поэтому Enter/переход по ссылке без JS
+       тоже прекрасно работает как обычный GET-поиск. *}
+    <div class="vkx-search audio-search-panel" n:if="$mode == 'list' || $mode == 'uploaded' || $mode == 'alone_audio'">
+        <form action="/search" method="get" id="audioQuickSearchForm">
+            <input type="hidden" name="section" value="audios">
+            <input type="text" name="q" id="audioQuickSearchInput" placeholder="{_header_search}" autocomplete="off">
+        </form>
+    </div>
+
+    {* .summaryBar — сразу под поиском (особое исключение для раздела аудио). *}
+    <div n:if="isset($audios)" class='summaryBarHideable summaryBar summaryBarFlex' style="display: none;">
+        <div class='summary'>
+            <b>{tr("is_x_audio", $audiosCount)}</b>
+        </div>
+
+        {include "../components/paginator.xml", conf => (object) [
+            "page"     => $page,
+            "count"    => $audiosCount,
+            "amount"   => sizeof($audios),
+            "perPage"  => $perPage ?? \OPENVK_DEFAULT_PER_PAGE,
+            "atTop"    => true,
+            "space"    => 6,
+            "tidy"     => true,
+        ]}
+    </div>
+
+    <a class="vkx-create"
+       href="/player/upload{if !empty($isMyClub)}?gid={abs($ownerId)}{/if}"
+       n:if="$mode == 'uploaded' && isset($thisUser)">
+        <span class="vkx-create-ico">
+            <svg viewBox="0 0 16 16" width="20" height="20" fill="currentColor">
+                <path d="M8 2a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5h-4.5a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 8 2z"/>
+            </svg>
+        </span>
+        <span class="vkx-create-text"><b>{_upload_audio}</b></span>
+        <svg class="vkx-create-arrow" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 3l5 5-5 5"/>
+        </svg>
+    </a>
+
+    <div class="audiosContainer" n:if="$mode != 'playlists'">
+        <div class="scroll_container" id="audio_list_container">
+            <div n:if="$audiosCount <= 0" class="audio-empty-state">
+                {include "../components/content_error.xml", description => $ownerId > 0 ? ($ownerId == $thisUser->getId() ? tr("no_audios_thisuser") : tr("no_audios_user")) : tr("no_audios_club")}
+            </div>
+            <div class="scroll_node" n:foreach="$audios ?? [] as $audio">
+                {include "player.xml", audio => $audio, club => $club}
+            </div>
+        </div>
+
+        {* new and popular modes are unavailable now *}
+        <div n:if="$mode != 'new' && $mode != 'popular'">
+            {include "../components/paginator.xml", conf => (object) [
+                "page"     => $page,
+                "count"    => $audiosCount,
+                "amount"   => sizeof($audios),
+                "perPage"  => $perPage ?? \OPENVK_DEFAULT_PER_PAGE,
+                "atBottom" => true,
+                "atTop"   => false,
+                "tidy"    => false
+            ]}
+        </div>
+    </div>
+
+    {* Для playlists-режима у Audio/List.xml исторически своя страница *}
+    <div class="audiosContainer" n:if="$mode == 'playlists'">
+        <a class="vkx-create" 
+           href="/audios/newPlaylist{if $isMyClub}?gid={abs($ownerId)}{/if}" 
+           n:if="$isMy || $isMyClub">
+            <span class="vkx-create-ico">
+                <svg viewBox="0 0 16 16" width="20" height="20" fill="currentColor">
+                    <path d="M8 2a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5h-4.5a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 8 2z"/>
+                </svg>
+            </span>
+            <span class="vkx-create-text"><b>{_new_playlist}</b></span>
+            <svg class="vkx-create-arrow" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 3l5 5-5 5"/>
+            </svg>
+        </a>
+        <div class="scroll_container playlistContainer">
+            <div n:if="$playlistsCount <= 0" class="audio-empty-state">
+                {include "../components/content_error.xml", description => $ownerId > 0 ? ($ownerId == $thisUser->getId() ? tr("no_playlists_thisuser") : tr("no_playlists_user")) : tr("no_playlists_club")}
+            </div>
+            <div class='scroll_node' n:foreach='$playlists ?? [] as $playlist'>
+                {include 'playlistListView.xml', playlist => $playlist}
+            </div>
+        </div>
+
+        <div>
+            {include "../components/paginator.xml", conf => (object) [
+                "page"     => $page,
+                "count"    => $playlistsCount,
+                "amount"   => sizeof($playlists),
+                "perPage"  => $perPage ?? \OPENVK_DEFAULT_PER_PAGE,
+                "atBottom" => true,
+                "atTop"   => false,
+                "tidy"    => false
+            ]}
+        </div>
+    </div>
+
+    {if $mode == 'list' || $mode == 'uploaded' || $mode == 'alone_audio'}
+    <script>
+        (function() {
+            var input = document.getElementById('audioQuickSearchInput');
+            var listContainer = document.getElementById('audio_list_container');
+            if(!input || !listContainer) {
+                return;
+            }
+
+            var originalHTML = listContainer.innerHTML;
+            var baseContext = window.__current_page_audio_context;
+            var debounceTimer = null;
+            var lastValue = '';
+
+            function csrf() {
+                var meta = document.querySelector('meta[name=csrf]');
+                return meta ? meta.getAttribute('value') : '';
+            }
+
+            function restoreOriginalList() {
+                listContainer.innerHTML = originalHTML;
+                window.__current_page_audio_context = baseContext;
+                if(window.player) {
+                    window.player.__renewContext();
+                    window.player.loadContext(baseContext ? (baseContext.page || 1) : 1);
+                }
+            }
+
+            function runSearch(value) {
+                var formData = new FormData();
+                formData.append('context', 'classic_search_context');
+                formData.append('context_entity', JSON.stringify({
+                    order: 'id',
+                    invert: 0,
+                    genre: 'any',
+                    only_performers: 0,
+                    with_lyrics: 0,
+                    query: value
+                }));
+                formData.append('page', 1);
+                formData.append('returnPlayers', 1);
+                formData.append('hash', csrf());
+
+                fetch('/audios/context', { method: 'POST', body: formData })
+                    .then(function(response) { return response.text(); })
+                    .then(function(html) {
+                        if(input.value.trim() !== value) {
+                            return; // пришёл устаревший ответ, пока печатали дальше
+                        }
+
+                        var doc = new DOMParser().parseFromString(html, 'text/html');
+                        var countInput = doc.querySelector("input[name='count']");
+                        var count = countInput ? Number(countInput.value) : 0;
+
+                        listContainer.innerHTML = '';
+                        if(count < 1) {
+                            var empty = document.createElement('div');
+                            empty.className = 'audio-empty-state';
+                            empty.innerHTML = '<div class="message content_page_error"><p>{_no_results}</p></div>';
+                            listContainer.appendChild(empty);
+                        } else {
+                            doc.querySelectorAll('.audioEmbed').forEach(function(el) {
+                                var node = document.createElement('div');
+                                node.className = 'scroll_node';
+                                node.appendChild(el);
+                                listContainer.appendChild(node);
+                            });
+                        }
+
+                        window.__current_page_audio_context = {
+                            name: 'classic_search_context',
+                            entity_id: 0,
+                            page: 1,
+                            order: 'id',
+                            invert: 0,
+                            genre: 'any',
+                            only_performers: 0,
+                            with_lyrics: 0,
+                            query: value
+                        };
+
+                        if(window.player) {
+                            window.player.__renewContext();
+                            window.player.loadContext(1);
+                        }
+                    });
+            }
+
+            input.addEventListener('input', function() {
+                var value = input.value.trim();
+                if(value === lastValue) {
+                    return;
+                }
+                lastValue = value;
+
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(function() {
+                    if(value === '') {
+                        restoreOriginalList();
+                    } else {
+                        runSearch(value);
+                    }
+                }, 350);
+            });
+
+            document.getElementById('audioQuickSearchForm').addEventListener('submit', function(e) {
+                if(input.value.trim() === '') {
+                    e.preventDefault();
+                }
+            });
+        })();
+    </script>
+    {/if}
+{/block}

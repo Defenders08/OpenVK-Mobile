@@ -1,0 +1,636 @@
+<section class="wall wall_block vk-clean-wall">
+
+<div class="page-header vk-wall-header">
+    <div class="vk-header-title">
+        {_wall} <span class="wall_block_counter">{tr("wall", $count)}</span>
+    </div>
+    <a href="/wall{$owner}" class="vk-header-all">{_all_title}</a>
+</div>
+
+<div class="insertThere" id="wall_block_posts"></div>
+
+<div id="underHeader">
+    <div n:if="$canPost" class="wall-form">
+        {var $route = "/wall" . $owner . "/makePost"}
+        {var $graffiti = (bool) ovkGetQuirk("comments.allow-graffiti")}
+        {var $composerClub = $club ?? NULL}
+
+        {default $textAreaCtr = 10}
+        {php $textAreaId = ++$textAreaCtr}
+
+        <div id="write" class="model_content_textarea vk-wall-card" data-id="{gettype($owner) == 'integer' ? $owner : $owner->getId()}">
+            <form action="{$route}" method="post" enctype="multipart/form-data" class="ovk-post-form">
+                <textarea id="wall-post-input{$textAreaId}" placeholder="{_write}" name="text" class="vk-post-textarea" autocomplete="off"></textarea>
+                <div style="display:none;"></div>
+
+                <div id="post-buttons{$textAreaId}" class="post-buttons vk-post-actions-panel">
+                    <div class="post-horizontal"></div>
+                    <div class="post-vertical"></div>
+                    <div class="post-has-poll" style="display:none;">{_poll}</div>
+                    <div class="post-has-geo" style="display:none;"></div>
+                    <div class="post-source" style="display:none;"></div>
+                    <div class="post-replyto" style="display:none;"></div>
+
+                    {var $anonEnabled = \OPENVK_ROOT_CONF['openvk']['preferences']['wall']['anonymousPosting']['enable']}
+                    <div class="post-opts vk-post-checkboxes" n:if="(!is_null($thisUser) && !is_null($composerClub) && $owner < 0 && $composerClub->canBeModifiedBy($thisUser)) || $anonEnabled">
+                        {if !is_null($thisUser) && !is_null($composerClub) && $owner < 0}
+                            {if $composerClub->canBeModifiedBy($thisUser)}
+                                <script n:syntax="off">
+                                    function onWallAsGroupClick(el) {
+                                        var force = document.getElementById("forceSignOpt");
+                                        if (force) force.style.display = el.checked ? "block" : "none";
+                                        var anon = document.getElementById("octoberAnonOpt");
+                                        if (anon) anon.style.display = el.checked ? "none" : "block";
+                                    }
+                                </script>
+                                <label n:if="$composerClub->getWallType() == 1">
+                                    <input type="checkbox" name="as_group" onchange="onWallAsGroupClick(this)" checked />
+                                    {_post_as_group}
+                                </label>
+                                <label id="forceSignOpt" style="display:block;">
+                                    <input type="checkbox" name="force_sign" />
+                                    {_add_signature}
+                                </label>
+                            {/if}
+                        {/if}
+
+                        <label n:if="$anonEnabled" id="octoberAnonOpt">
+                            <input type="checkbox" name="anon" />
+                            {_as_anonymous}
+                        </label>
+                    </div>
+
+                    <input type="hidden" name="horizontal_attachments" value="" autocomplete="off" />
+                    <input type="hidden" name="vertical_attachments" value="" autocomplete="off" />
+                    <input type="hidden" name="poll" value="none" autocomplete="off" />
+                    <input type="hidden" name="source" value="none" autocomplete="off" />
+                    <input type="hidden" name="geo" value="" autocomplete="off" />
+                    <input type="hidden" name="reply_to_comment" value="" autocomplete="off" />
+                    <input type="hidden" name="type" value="1" autocomplete="off" />
+                    <input type="hidden" name="hash" value="{$csrfToken}" autocomplete="off" />
+
+                    <div class="vk-composer-bottom">
+                        <div class="vk-bottom-left">
+                            <div class="ovk-wall-attachment-area">
+                                <a href="javascript:void(0)" class="menu_toggler vk-btn-attach" data-target="wallAttachmentMenu{$textAreaId}">
+                                    {_attach}
+                                </a>
+
+                                <div id="wallAttachmentMenu{$textAreaId}" class="hidden ovk-wall-attachment-menu vk-styled-menu">
+                                    <a href="javascript:void(0)" onclick="OvkWallComposer.triggerUpload(event, this, 'photo');">
+                                        {_photo}
+                                    </a>
+                                    <a href="javascript:void(0)" onclick="event.preventDefault(); event.stopPropagation(); triggerOpenVKAttachment('__videoAttachment');">
+                                        {_video}
+                                    </a>
+                                    <a href="javascript:void(0)" onclick="event.preventDefault(); event.stopPropagation(); triggerOpenVKAttachment('__audioAttachment');">
+                                        {_audio}
+                                    </a>
+                                    <a href="javascript:void(0)" onclick="event.preventDefault(); event.stopPropagation(); triggerOpenVKAttachment('__documentAttachment');">
+                                        {_document}
+                                    </a>
+                                    <a n:if="$graffiti" href="javascript:void(0)" onclick="event.preventDefault(); event.stopPropagation(); initGraffiti(event);">
+                                        {_graffiti}
+                                    </a>
+                                    <a href="javascript:void(0)" onclick="event.preventDefault(); event.stopPropagation(); triggerOpenVKAttachment('__geoAttacher');">
+                                        {_geo_place}
+                                    </a>
+                                    <a href="javascript:void(0)" onclick="event.preventDefault(); event.stopPropagation(); triggerOpenVKAttachment('__sourceAttacher');">
+                                        {_source}
+                                    </a>
+                                </div>
+
+                                {* Настоящие скрытые триггеры OpenVK (al_wall.js слушает клики по этим id
+                                   глобально, делегированием на document — им не нужен components/textArea.xml
+                                   на странице). triggerOpenVKAttachment() выше просто кликает по нужному. *}
+                                <a id="__videoAttachment" style="display:none"></a>
+                                <a id="__audioAttachment" style="display:none"></a>
+                                <a id="__documentAttachment" style="display:none" {if !is_null($composerClub) && $composerClub->canBeModifiedBy($thisUser)}data-club="{$composerClub->getRealId()}"{/if}></a>
+                                <a id="__geoAttacher" style="display:none"></a>
+                                <a id="__sourceAttacher" style="display:none"></a>
+                            </div>
+
+                            <label class="vk-nsfw-inline">
+                                <input type="checkbox" name="nsfw" />
+                                <span>{_contains_nsfw}</span>
+                            </label>
+                        </div>
+
+                        <div class="vk-bottom-right">
+                            <input type="submit" value="{_write}" class=" vk-btn-submit" />
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="wall-posts scroll_container">
+        {if sizeof($posts) > 0}
+            <div class="scroll_node" n:foreach="$posts as $post" data-uniqueid="{$post->getPrettyId()}">
+                <a name="postGarter={$post->getId()}"></a>
+                {include "post.xml", post => $post}
+            </div>
+
+            {include "paginator.xml", conf => $paginatorConf}
+        {else}
+            <div class="empty-state-block"><span class="empty-state-text">{_no_posts_abstract}</span></div>
+        {/if}
+    </div>
+</div>
+
+</section>
+
+{syntax off}
+<script>
+(function () {
+    "use strict";
+
+    window.OvkWallComposer = {
+        getWrite: function (element) {
+            if (!element) return null;
+            return element.id === "write" ? element : element.closest("#write, .wall-form, .ovk-post-form");
+        },
+
+        showButtons: function (write) {
+            if (!write) return;
+            var buttons = write.querySelector(".post-buttons");
+            if (buttons) buttons.style.display = "block";
+        },
+
+        toggleMenu: function (write) {
+            if (!write) return;
+            var menu = write.querySelector(".ovk-wall-attachment-menu");
+            if (menu) menu.classList.toggle("hidden");
+        },
+
+        closeMenu: function (write) {
+            if (!write) return;
+            var menu = write.querySelector(".ovk-wall-attachment-menu");
+            if (menu) menu.classList.add("hidden");
+        },
+
+        triggerUpload: function (e, btn, type) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            var write = this.getWrite(btn);
+            if (!write) return;
+            this.closeMenu(write);
+            this.showButtons(write);
+
+            this.choosePhotoNative(write);
+        },
+
+        choosePhotoNative: function (write) {
+            var self = this;
+            var form = write.querySelector("form") || write;
+            var horizontal = form.querySelector(".post-horizontal");
+
+            if (!horizontal) {
+                horizontal = document.querySelector("#write .post-horizontal");
+            }
+
+            var input = document.createElement("input");
+            input.type = "file";
+            input.accept = "image/*";
+            input.name = "photo[]";
+            input.multiple = true;
+            input.style.display = "none";
+            document.body.appendChild(input);
+
+            input.addEventListener("change", function () {
+                var files = Array.from(input.files || []);
+                input.remove();
+                if (!files.length) return;
+
+                var contextId = write.dataset.id || document.getElementById("write").dataset.id;
+                var formData = new FormData();
+
+                for (var i = 0; i < files.length; i++) {
+                    formData.append("photo_" + i, files[i]);
+                }
+                formData.append("count", files.length);
+
+                var csrfMeta = document.querySelector('meta[name="csrf"]');
+                var csrf = (csrfMeta ? (csrfMeta.content || csrfMeta.getAttribute("value")) : "") ||
+                           (form.querySelector('input[name="hash"]') || {}).value;
+                formData.append("hash", csrf);
+
+                var temporary = document.createElement("div");
+                temporary.className = "attachment-item upload-item lagged";
+                temporary.innerHTML = '<div style="width:64px;height:64px;background:var(--color-background-secondary);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--color-text-tertiary);">Загрузка...</div>';
+                
+                if (horizontal) {
+                    horizontal.appendChild(temporary);
+                }
+
+                fetch("/photos/upload?upload_context=" + encodeURIComponent(contextId), {
+                    method: "POST",
+                    body: formData,
+                    credentials: "same-origin"
+                })
+                .then(function (r) { return r.json(); })
+                .then(function (res) {
+                    if (temporary.parentNode) {
+                        temporary.remove();
+                    }
+
+                    if (res.success && res.photos) {
+                        var hiddenHoriz = form.querySelector('input[name="horizontal_attachments"]');
+                        var hiddenAttach = form.querySelector('input[name="attachments"]');
+                        
+                        if (!hiddenAttach) {
+                            hiddenAttach = document.createElement("input");
+                            hiddenAttach.type = "hidden";
+                            hiddenAttach.name = "attachments";
+                            hiddenAttach.value = "";
+                            form.appendChild(hiddenAttach);
+                        }
+
+                        res.photos.forEach(function (ph) {
+                            var descriptor = ph.target || ("photo" + (ph.pretty_id || ph.id));
+
+                            if (hiddenHoriz) {
+                                var hList = hiddenHoriz.value ? hiddenHoriz.value.split(",").filter(Boolean) : [];
+                                if (hList.indexOf(descriptor) === -1 && hList.indexOf(String(ph.pretty_id)) === -1) {
+                                    hList.push(descriptor);
+                                }
+                                hiddenHoriz.value = hList.join(",");
+                            }
+
+                            if (hiddenAttach) {
+                                var aList = hiddenAttach.value ? hiddenAttach.value.split(",").filter(Boolean) : [];
+                                if (aList.indexOf(descriptor) === -1) {
+                                    aList.push(descriptor);
+                                }
+                                hiddenAttach.value = aList.join(",");
+                            }
+
+                            var thumb = document.createElement("div");
+                            thumb.className = "attachment-item upload-item";
+                            thumb.innerHTML = '<img src="' + ph.url + '" style="width:64px;height:64px;object-fit:cover;display:block;">';
+
+                            var removeBtn = document.createElement("a");
+                            removeBtn.href = "javascript:void(0)";
+                            removeBtn.className = "remove-attach";
+                            removeBtn.innerHTML = "&times;";
+                            removeBtn.onclick = function (e) {
+                                e.stopPropagation();
+                                thumb.remove();
+
+                                if (hiddenHoriz) {
+                                    hiddenHoriz.value = hiddenHoriz.value.split(",").filter(function (val) {
+                                        return val !== descriptor && val !== String(ph.pretty_id);
+                                    }).join(",");
+                                }
+
+                                if (hiddenAttach) {
+                                    hiddenAttach.value = hiddenAttach.value.split(",").filter(function (val) {
+                                        return val !== descriptor;
+                                    }).join(",");
+                                }
+                            };
+                            thumb.appendChild(removeBtn);
+
+                            if (horizontal) {
+                                horizontal.appendChild(thumb);
+                            }
+                        });
+
+                        self.showButtons(write);
+                    }
+
+                })
+                .catch(function (err) {
+                    if (temporary.parentNode) {
+                        temporary.remove();
+                    }
+                    alert("Ошибка сети: " + err.message);
+                });
+            });
+
+            input.click();
+        }
+
+    };
+
+    function initEvents() {
+        document.querySelectorAll(".ovk-post-form textarea").forEach(function (t) {
+            if (t.dataset.bound) return;
+            t.dataset.bound = "1";
+            var open = function () {
+                var w = OvkWallComposer.getWrite(t);
+                OvkWallComposer.showButtons(w);
+            };
+            t.addEventListener("focus", open);
+            t.addEventListener("click", open);
+            t.addEventListener("input", open);
+        });
+
+        document.querySelectorAll(".menu_toggler").forEach(function (b) {
+            if (b.dataset.bound) return;
+            b.dataset.bound = "1";
+            b.addEventListener("click", function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                var w = OvkWallComposer.getWrite(b);
+                OvkWallComposer.toggleMenu(w);
+            });
+        });
+
+        document.addEventListener("click", function (e) {
+            if (!e.target.closest(".ovk-wall-attachment-area")) {
+                document.querySelectorAll(".ovk-wall-attachment-menu").forEach(function (m) {
+                    m.classList.add("hidden");
+                });
+            }
+        });
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initEvents);
+    } else {
+        initEvents();
+    }
+})();
+</script>
+<style>
+/* 1. Полное схлопывание двойной обводки под блоком сверху (Аудиозаписи) */
+section.wall.wall_block.vk-clean-wall {
+    border-top: none !important;
+    margin-top: -1px !important; /* Наложение границ исключает двойную полоску */
+    position: relative;
+    z-index: 1;
+}
+
+.vk-clean-wall .page-header,
+.vk-clean-wall .vk-wall-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background: var(--color-background);
+    border-top: none !important;
+    border-bottom: none !important;
+    box-shadow: none !important;
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.vk-header-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--color-primary-strong);
+}
+
+.vk-header-all {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--color-primary-strong);
+    text-decoration: none;
+}
+
+.vk-header-all:hover {
+    text-decoration: underline;
+}
+
+/* 2. Блок создания поста с единой границей */
+.vk-wall-card {
+    background: var(--color-background-secondary);
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+    padding: 10px 14px 11px 14px;
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Поле ввода */
+.vk-post-textarea {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    height: 52px;
+    min-height: 52px;
+    padding: 7px 9px;
+    margin: 0;
+    font-size: 13px;
+    line-height: 17px;
+    color: var(--color-text-strong);
+    border: 1px solid var(--color-border-input);
+    border-radius: 2px;
+    outline: none;
+    background: var(--color-background);
+    resize: vertical;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.07);
+    font-family: inherit;
+}
+
+.vk-post-textarea::placeholder {
+    color: var(--color-text-muted);
+    opacity: 1;
+}
+
+.vk-post-textarea:focus {
+    border-color: var(--color-primary);
+}
+
+/* Панель с кнопками */
+.vk-post-actions-panel {
+    display: block;
+    margin-top: 8px;
+}
+
+.vk-composer-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 28px;
+}
+
+/* Левая часть: кнопка + чекбокс */
+.vk-bottom-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Кнопка "Прикрепить" */
+.vk-btn-attach {
+    display: inline-block;
+    box-sizing: border-box;
+    height: 28px;
+    line-height: 26px;
+    padding: 0 13px;
+    background: var(--color-background-secondary) linear-gradient(180deg, #f5f7f8 0%, #e8ebed 100%);
+    border: 1px solid var(--color-border-input);
+    border-radius: 2px;
+    color: var(--color-primary-strong);
+    font-size: 12px;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    user-select: none;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+    text-align: center;
+}
+
+.vk-btn-attach:hover {
+    background: var(--color-background-hover) linear-gradient(180deg, #f9fafb 0%, #edf0f2 100%);
+    border-color: var(--color-border-input);
+    text-decoration: none;
+}
+
+.vk-btn-attach:active {
+    background: var(--color-background-secondary);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Чекбокс NSFW */
+.vk-nsfw-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    user-select: none;
+    line-height: 1;
+}
+
+.vk-nsfw-inline input {
+    margin: 0;
+    cursor: pointer;
+}
+
+/* Кнопка "Написать" */
+.vk-btn-submit {
+    display: inline-block;
+    box-sizing: border-box;
+    height: 28px;
+    line-height: 26px;
+    padding: 0 18px;
+    background: var(--color-primary) linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-strong) 100%);
+    border: 1px solid var(--color-primary-strong);
+    border-radius: 2px;
+    color: var(--color-background) !important;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.15);
+    text-align: center;
+    outline: none;
+}
+
+.vk-btn-submit:hover {
+    background: var(--color-primary) linear-gradient(180deg, var(--color-primary-light) 0%, var(--color-primary) 100%);
+    border-color: var(--color-primary-strong);
+}
+
+.vk-btn-submit:active {
+    background: var(--color-primary-strong);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Выпадающее меню */
+.ovk-wall-attachment-area {
+    position: relative;
+    display: inline-block;
+}
+
+.vk-styled-menu {
+    position: absolute;
+    left: 0;
+    bottom: calc(100% + 5px);
+    background: var(--color-background);
+    border: 1px solid var(--color-border-input);
+    border-radius: 3px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    min-width: 165px;
+    padding: 4px 0;
+    z-index: 1000;
+}
+
+.vk-styled-menu.hidden {
+    display: none !important;
+}
+
+.vk-styled-menu a {
+    display: block;
+    padding: 6px 14px;
+    font-size: 12.5px;
+    color: var(--color-primary-strong);
+    text-decoration: none;
+    line-height: 1.4;
+}
+
+.vk-styled-menu a:hover {
+    background-color: var(--color-background-secondary);
+    color: var(--color-primary-strong);
+}
+
+/* Чекбоксы от имени группы */
+.vk-post-checkboxes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    margin-bottom: 6px;
+}
+
+.vk-post-checkboxes label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+}
+
+/* Превью картинок */
+.post-horizontal {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+
+.post-horizontal .attachment-item {
+    position: relative;
+    width: 64px;
+    height: 64px;
+    border-radius: 2px;
+    overflow: hidden;
+    background: var(--color-background);
+    border: 1px solid var(--color-border-input);
+    display: inline-block;
+}
+
+.post-horizontal .attachment-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.post-horizontal .attachment-item.lagged {
+    opacity: 0.5;
+}
+
+.post-horizontal .attachment-item .remove-attach {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 16px;
+    height: 16px;
+    background: rgba(0, 0, 0, 0.6);
+    color: var(--color-background);
+    border-radius: 50%;
+    text-align: center;
+    line-height: 14px;
+    font-size: 11px;
+    cursor: pointer;
+    text-decoration: none;
+}
+</style>
+{/syntax}

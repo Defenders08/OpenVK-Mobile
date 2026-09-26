@@ -1,0 +1,88 @@
+{extends "../@layout.xml"}
+{block title}{_menu_help}{/block}
+
+{block header}
+    {_menu_help}
+{/block}
+
+{block content}
+    {var $isMain = $mode === 'faq'}
+    {var $isNew  = $mode === 'new'}
+    {var $isList = $mode === 'list'}
+
+    {if $thisUser}
+        <div class="tabs">
+            <div n:attr="id => ($isMain ? 'activetabs' : null)" class="tab">
+                <a n:attr="id => ($isMain ? 'act_tab_a' : null)" href="/support">{_support_faq}</a>
+            </div>
+            <div n:if="$count > 0" n:attr="id => ($isList ? 'activetabs' : null)" class="tab">
+                <a n:attr="id => ($isList ? 'act_tab_a' : null)" href="/support?act=list">{_support_list}</a>
+            </div>
+            <div n:attr="id => ($isNew ? 'activetabs' : null)" class="tab">
+                <a n:attr="id => ($isNew ? 'act_tab_a' : null)" href="/support?act=new">{_support_new}</a>
+            </div>
+        </div>
+        <br />
+        
+        {if $isNew}
+            {if !is_null($banReason)}
+                <center>
+                    <img src="/assets/packages/static/openvk/img/oof.apng" alt="{_banned_alt}" style="width: 20%;" />
+                </center>
+                <p>
+                    {tr("banned_in_support_1", htmlentities($thisUser->getCanonicalName()))|noescape}<br/>
+                    {tr("banned_in_support_2", htmlentities($banReason))|noescape}
+                </p>
+            {else}
+                <div class="new">
+                    <form id="new_ticket_form" action="/support" method="post" style="margin:0;">
+                        <center>
+                            <input type="text" name="name" style="width: 80%; resize: vertical;" placeholder="{_support_new_title}" /><br /><br />
+                            <textarea name="text" style="width: 80%; resize: vertical;" placeholder="{_support_new_content}"></textarea><br /><br />
+                            <input type="hidden" name="hash" value="{$csrfToken}" />
+                            <input type="submit" value="{_write}" class="button" style="margin-left: 70%;" /><br /><br />
+                        </center>
+                    </form>
+                </div>
+            {/if}
+        {/if}
+    {/if}
+
+    {if $isMain}
+        <h4>{_support_faq}</h4><br />
+        <div n:foreach="$faq as $section" class="faq">
+            <div id="faqhead">{$section[0]}</div>
+            <div id="faqcontent">{$section[1]|noescape}</div>
+        </div>
+    {/if}
+
+    {if $isList}
+        <div class="list">
+            <div class="list-item" n:foreach="$tickets as $ticket">
+                <div class="list-item-cover">
+                    <img src="/assets/packages/static/openvk/img/note_icon.png" alt="{_support_ticket}" width="40" height="40" />
+                </div>
+                <div class="list-item-info">
+                    <a href="/support/view/{$ticket->getId()}" class="list-item-title">{$ticket->getName()}</a>
+                    <div class="list-item-desc">{_status}: {$ticket->getStatus()}</div>
+                </div>
+            </div>
+        </div>
+
+        {if $count < 1}
+            {include "../components/nothing.xml"}
+        {/if}
+
+        <div style="padding: 8px;">
+            {include "../components/paginator.xml", conf => (object) [
+                "page"     => $page,
+                "count"    => $count,
+                "amount"   => sizeof($tickets),
+                "perPage"  => \OPENVK_DEFAULT_PER_PAGE,
+                "atBottom" => true,
+                "atTop"   => false,
+                "tidy"    => false
+            ]}
+        </div>
+    {/if}
+{/block}

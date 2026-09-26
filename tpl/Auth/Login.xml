@@ -1,0 +1,38 @@
+{*  =========================================================
+    LOGIN — вход (/login).
+
+    Форма отправляется POST на текущий адрес.
+    Обязательные поля: login, password, hash (CSRF).
+    ========================================================= *}
+
+{extends "../@layout.xml"}
+
+{block title}{_log_in}{/block}
+{block header}{_log_in}{/block}
+
+{block content}
+    <form class="form" method="POST" enctype="multipart/form-data">
+
+        <h4>{_log_in}</h4>
+
+        <div class="form-field">
+            <label class="form-label" for="login">{_email}</label>
+            <input class="form-input" id="login" type="text" name="login" required />
+        </div>
+
+        <div class="form-field">
+            <label class="form-label" for="password">{_password}</label>
+            <input class="form-input" id="password" type="password" name="password" required />
+        </div>
+
+        <input type="hidden" name="hash" value="{$csrfToken}" />
+
+        <div class="form-actions">
+            <input type="submit" value="{_log_in}" class="button button-primary" />
+            <a href="/reg" class="button button-secondary">{_registration}</a>
+        </div>
+
+        <p><a href="/restore">{_forgot_password}</a></p>
+
+    </form>
+{/block}

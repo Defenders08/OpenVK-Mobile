@@ -1,0 +1,2794 @@
+{extends "../@layout.xml"}
+
+{* =========================================================
+FEED — лента новостей (/feed и /feed/all).
+
+Переменные: $posts, $paginatorConf, $globalFeed.
+
+id="__feed_settings_link" и data-pagescount — хук штатного
+JS. Не удалять.
+========================================================= *}
+
+{block title}{_feed}{/block}
+{block header}{_feed}{/block}
+
+{block content}
+
+<div class="tabs">
+    <div n:attr="id => (isset($globalFeed) ? null : 'activetabs')" class="tab">
+        <a n:attr="id => (isset($globalFeed) ? null : 'act_tab_a')" href="/feed">{_my_news}</a>
+    </div>
+
+    <div n:attr="id => (isset($globalFeed) ? 'activetabs' : null)" class="tab">
+        <a n:attr="id => (isset($globalFeed) ? 'act_tab_a' : null)" href="/feed/all">{_all_news}</a>
+    </div>
+
+    {* ВАЖНО: этот id используется штатным OpenVK JS *}
+    <a href="#"
+       id="__feed_settings_link"
+       data-pagescount="{ceil($paginatorConf->count / $paginatorConf->perPage)}">
+        {_feed_settings}
+    </a>
+</div>
+
+
+{* =========================================================
+   КОМПОЗЕР ЛЕНТЫ
+   ========================================================= *}
+
+<div class="wall-form">
+
+    {var $composerOwner = $thisUser->getId()}
+    {var $route = "/wall" . $composerOwner . "/makePost"}
+    {var $graffiti = (bool) ovkGetQuirk("comments.allow-graffiti")}
+    {var $composerClub = NULL}
+
+    {default $textAreaCtr = 10}
+    {php $textAreaId = ++$textAreaCtr}
+
+    <div id="write"
+         class="model_content_textarea vk-wall-card"
+         data-id="{$composerOwner}">
+
+        <form action="{$route}"
+              method="post"
+              enctype="multipart/form-data"
+              class="ovk-post-form">
+
+            <textarea id="wall-post-input{$textAreaId}"
+                      placeholder="{_write}"
+                      name="text"
+                      class="vk-post-textarea"
+                      autocomplete="off"></textarea>
+
+            <div style="display:none;"></div>
+
+            <div id="post-buttons{$textAreaId}"
+                 class="post-buttons vk-post-actions-panel">
+
+                <div class="post-horizontal"></div>
+                <div class="post-vertical"></div>
+
+                <div class="post-has-poll" style="display:none;">
+                    {_poll}
+                </div>
+
+                <div class="post-has-geo" style="display:none;"></div>
+                <div class="post-source" style="display:none;"></div>
+                <div class="post-replyto" style="display:none;"></div>
+
+                {var $anonEnabled = \OPENVK_ROOT_CONF['openvk']['preferences']['wall']['anonymousPosting']['enable']}
+
+                <div class="post-opts vk-post-checkboxes"
+                     n:if="(!is_null($thisUser) && !is_null($composerClub) && $owner < 0 && $composerClub->canBeModifiedBy($thisUser)) || $anonEnabled">
+
+                    {if !is_null($thisUser) && !is_null($composerClub) && $owner < 0}
+
+                        {if $composerClub->canBeModifiedBy($thisUser)}
+
+                            <script n:syntax="off">
+                                function onWallAsGroupClick(el) {
+                                    var force = document.getElementById("forceSignOpt");
+
+                                    if (force)
+                                        force.style.display = el.checked ? "block" : "none";
+
+                                    var anon = document.getElementById("octoberAnonOpt");
+
+                                    if (anon)
+                                        anon.style.display = el.checked ? "none" : "block";
+                                }
+                            </script>
+
+                            <label n:if="$composerClub->getWallType() == 1">
+                                <input type="checkbox"
+                                       name="as_group"
+                                       onchange="onWallAsGroupClick(this)"
+                                       checked />
+                                {_post_as_group}
+                            </label>
+
+                            <label id="forceSignOpt"
+                                   style="display:block;">
+                                <input type="checkbox"
+                                       name="force_sign" />
+                                {_add_signature}
+                            </label>
+
+                        {/if}
+
+                    {/if}
+
+                    <label n:if="$anonEnabled"
+                           id="octoberAnonOpt">
+
+                        <input type="checkbox"
+                               name="anon" />
+
+                        {_as_anonymous}
+
+                    </label>
+
+                </div>
+
+
+                <input type="hidden"
+                       name="horizontal_attachments"
+                       value=""
+                       autocomplete="off" />
+
+                <input type="hidden"
+                       name="vertical_attachments"
+                       value=""
+                       autocomplete="off" />
+
+                <input type="hidden"
+                       name="poll"
+                       value="none"
+                       autocomplete="off" />
+
+                <input type="hidden"
+                       name="source"
+                       value="none"
+                       autocomplete="off" />
+
+                <input type="hidden"
+                       name="geo"
+                       value=""
+                       autocomplete="off" />
+
+                <input type="hidden"
+                       name="reply_to_comment"
+                       value=""
+                       autocomplete="off" />
+
+                <input type="hidden"
+                       name="type"
+                       value="1"
+                       autocomplete="off" />
+
+                <input type="hidden"
+                       name="hash"
+                       value="{$csrfToken}"
+                       autocomplete="off" />
+
+
+                <div class="vk-composer-bottom">
+
+                    <div class="vk-bottom-left">
+
+                        <div class="ovk-wall-attachment-area">
+
+                            <a href="javascript:void(0)"
+                               class="menu_toggler vk-btn-attach"
+                               data-target="wallAttachmentMenu{$textAreaId}">
+                                {_attach}
+                            </a>
+
+                            <div id="wallAttachmentMenu{$textAreaId}"
+                                 class="hidden ovk-wall-attachment-menu vk-styled-menu">
+
+                                <a href="javascript:void(0)"
+                                   onclick="OvkWallComposer.triggerUpload(event, this, 'photo');">
+                                    {_photo}
+                                </a>
+
+                                <a href="javascript:void(0)"
+                                   class="ovk-real-attachment"
+                                   data-kind="video">
+                                    {_video}
+                                </a>
+
+                                <a href="javascript:void(0)"
+                                   class="ovk-real-attachment"
+                                   data-kind="audio">
+                                    {_audio}
+                                </a>
+
+                                <a href="javascript:void(0)"
+                                   class="ovk-real-attachment"
+                                   data-kind="document"
+                                   {if !is_null($composerClub) && $composerClub->canBeModifiedBy($thisUser)}
+                                       data-club="{$composerClub->getRealId()}"
+                                   {/if}>
+                                    {_document}
+                                </a>
+
+                                <a n:if="$graffiti"
+                                   href="javascript:void(0)"
+                                   onclick="event.preventDefault(); event.stopPropagation(); initGraffiti(event);">
+                                    {_graffiti}
+                                </a>
+
+                                <a href="javascript:void(0)"
+                                   class="ovk-special-attachment"
+                                   data-kind="geo">
+                                    {_geo_place}
+                                </a>
+
+                                <a href="javascript:void(0)"
+                                   class="ovk-special-attachment"
+                                   data-kind="source">
+                                    {_source}
+                                </a>
+
+                            </div>
+
+                        </div>
+
+
+                        <label class="vk-nsfw-inline">
+
+                            <input type="checkbox"
+                                   name="nsfw" />
+
+                            <span>{_contains_nsfw}</span>
+
+                        </label>
+
+                    </div>
+
+
+                    <div class="vk-bottom-right">
+
+                        <input type="submit"
+                               value="{_write}"
+                               class="vk-btn-submit" />
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+{* =========================================================
+   ПОСТЫ
+   ========================================================= *}
+
+<div class="wall-posts scroll_container">
+
+    {if sizeof($posts) > 0}
+        <div class="scroll_node"
+             n:foreach="$posts as $post"
+             data-uniqueid="{$post->getPrettyId()}">
+
+            <a name="postGarter={$post->getId()}"></a>
+
+            {include "../components/post.xml",
+                     post => $post,
+                     onWallOf => true,
+                     commentSection => true,
+                     bigWall => true}
+
+        </div>
+    {else}
+        <div class="empty-state-block"><span class="empty-state-text">{_no_posts_abstract}</span></div>
+    {/if}
+
+</div>
+
+
+{* =========================================================
+   ПАГИНАТОР
+   ========================================================= *}
+
+<div class="feed-bottom">
+
+    {include "../components/paginator.xml",
+             conf => $paginatorConf}
+
+</div>
+```
+
+{syntax off}
+
+<script>
+(function () {
+    "use strict";
+
+    /*
+     * =========================================================
+     * FEED SETTINGS
+     * =========================================================
+     */
+
+    var feedSettingsOpened = false;
+    var feedSettingsOverlay = null;
+
+
+    /*
+     * Экранирование текста перед вставкой в HTML.
+     */
+    function escapeHtml(value) {
+
+        return String(value == null ? "" : value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+
+    }
+
+
+    /*
+     * Закрытие окна.
+     */
+    function closeFeedSettings() {
+
+        if (!feedSettingsOverlay)
+            return;
+
+        feedSettingsOverlay.classList.remove("visible");
+
+        setTimeout(function () {
+
+            if (feedSettingsOverlay &&
+                feedSettingsOverlay.parentNode) {
+
+                feedSettingsOverlay.parentNode.removeChild(
+                    feedSettingsOverlay
+                );
+
+            }
+
+            feedSettingsOverlay = null;
+            feedSettingsOpened = false;
+
+        }, 150);
+
+    }
+
+
+    /*
+     * Создание URL с настройками.
+     */
+    function applyFeedSettings(modal) {
+
+        var url = new URL(
+            window.location.href
+        );
+
+
+        /*
+         * Количество записей.
+         */
+        var postsSelect =
+            modal.querySelector("#vkFeedPosts");
+
+        if (postsSelect) {
+
+            url.searchParams.set(
+                "posts",
+                postsSelect.value
+            );
+
+        }
+
+
+        /*
+         * Страница.
+         */
+        var pageInput =
+            modal.querySelector("#vkFeedPage");
+
+        var pagesCount =
+            Number(
+                modal.dataset.pagescount || 1
+            );
+
+        var page =
+            Number(
+                pageInput ? pageInput.value : 1
+            );
+
+        if (!page || page < 1)
+            page = 1;
+
+        if (pagesCount > 0 && page > pagesCount)
+            page = pagesCount;
+
+        url.searchParams.set(
+            "p",
+            page
+        );
+
+
+        /*
+         * Показывать игнорируемые источники.
+         */
+        var ignored =
+            modal.querySelector("#vkFeedIgnored");
+
+        if (ignored && ignored.checked) {
+
+            url.searchParams.set(
+                "return_banned",
+                "1"
+            );
+
+        } else {
+
+            url.searchParams.delete(
+                "return_banned"
+            );
+
+        }
+
+
+        /*
+         * Записи со стен других пользователей.
+         */
+        var alien =
+            modal.querySelector("#vkFeedAlien");
+
+        if (alien && alien.checked) {
+
+            url.searchParams.set(
+                "with_alien_wall_posts",
+                "1"
+            );
+
+        } else {
+
+            url.searchParams.delete(
+                "with_alien_wall_posts"
+            );
+
+        }
+
+
+        /*
+         * Переходим на новую страницу.
+         */
+        window.location.href = url.href;
+
+    }
+
+
+    /*
+     * Загрузка игнорируемых источников.
+     *
+     * Используем штатный OpenVK API.
+     */
+    function loadIgnoredSources(container) {
+
+        if (!container)
+            return;
+
+        if (container.dataset.loaded === "1")
+            return;
+
+        container.dataset.loaded = "1";
+
+        container.innerHTML =
+            '<div class="vk-feed-ignored-loading">' +
+                'Загрузка...' +
+            '</div>';
+
+
+        fetch(
+            "/method/newsfeed.getBanned" +
+            "?auth_mechanism=roaming" +
+            "&extended=1" +
+            "&fields=real_id,screen_name,photo_50" +
+            "&merge=1",
+            {
+                credentials: "same-origin"
+            }
+        )
+        .then(function (response) {
+
+            return response.json();
+
+        })
+        .then(function (data) {
+
+            /*
+             * Разные версии OpenVK могут отдавать
+             * response немного по-разному.
+             */
+            var response =
+                data && data.response
+                    ? data.response
+                    : null;
+
+            var items =
+                response && Array.isArray(response.items)
+                    ? response.items
+                    : [];
+
+
+            if (!items.length) {
+
+                container.innerHTML =
+                    '<div class="vk-feed-empty">' +
+                        'Нет игнорируемых источников.' +
+                    '</div>';
+
+                return;
+
+            }
+
+
+            container.innerHTML = "";
+
+
+            items.forEach(function (item) {
+
+                var id =
+                    item.real_id ||
+                    item.id ||
+                    0;
+
+                var name =
+                    item.name ||
+                    (
+                        (item.first_name || "") +
+                        " " +
+                        (item.last_name || "")
+                    ).trim();
+
+                if (!name)
+                    name = "Пользователь";
+
+
+                var screenName =
+                    item.screen_name || "";
+
+
+                var row =
+                    document.createElement("div");
+
+                row.className =
+                    "vk-feed-ignored-item";
+
+
+                var avatar =
+                    item.photo_50 ||
+                    item.photo ||
+                    "";
+
+
+                row.innerHTML =
+
+                    '<a class="vk-feed-ignored-avatar" ' +
+                       'href="/' +
+                       escapeHtml(screenName) +
+                    '">' +
+
+                        (
+                            avatar
+                                ? '<img src="' +
+                                    escapeHtml(avatar) +
+                                  '">'
+                                : '<span class="vk-feed-avatar-placeholder"></span>'
+                        ) +
+
+                    '</a>' +
+
+
+                    '<a class="vk-feed-ignored-name" ' +
+                       'href="/' +
+                       escapeHtml(screenName) +
+                    '">' +
+
+                        escapeHtml(name) +
+
+                    '</a>' +
+
+
+                    '<button type="button" ' +
+                            'class="vk-feed-unignore-button" ' +
+                            'data-id="' +
+                            escapeHtml(id) +
+                            '">' +
+
+                        'Убрать' +
+
+                    '</button>';
+
+
+                container.appendChild(row);
+
+            });
+
+        })
+        .catch(function () {
+
+            container.innerHTML =
+                '<div class="vk-feed-empty">' +
+                    'Не удалось загрузить список.' +
+                '</div>';
+
+        });
+
+    }
+
+
+    /*
+     * Открытие окна настроек.
+     */
+    function openFeedSettings(link) {
+
+        if (feedSettingsOpened)
+            return;
+
+        feedSettingsOpened = true;
+
+
+        var currentUrl =
+            new URL(window.location.href);
+
+
+        var pagesCount =
+            Number(
+                link.dataset.pagescount || 1
+            );
+
+
+        var currentPosts =
+            Number(
+                currentUrl.searchParams.get("posts") || 10
+            );
+
+
+        var currentPage =
+            Number(
+                currentUrl.searchParams.get("p") || 1
+            );
+
+
+        var currentIgnored =
+            currentUrl.searchParams.get(
+                "return_banned"
+            ) === "1";
+
+
+        var currentAlien =
+            currentUrl.searchParams.get(
+                "with_alien_wall_posts"
+            ) === "1";
+
+
+        /*
+         * Overlay.
+         */
+        var overlay =
+            document.createElement("div");
+
+        overlay.className =
+            "vk-feed-settings-overlay";
+
+
+        /*
+         * Modal.
+         *
+         * Переиспользует существующий компонент модалки темы
+         * (.modal-box/.modal-head/.modal-body/.modal-foot — см.
+         * #status_edit_overlay/#post_edit_overlay в @layout.xml),
+         * а не отдельный дизайн. Функциональные классы/id для JS
+         * (.vk-feed-settings-close/-tab/-main/-ignored,
+         * .vk-feed-button-cancel/-primary, #vkFeed*) не переименованы —
+         * рядом просто добавлены настоящие визуальные классы темы.
+         */
+        var modal =
+            document.createElement("div");
+
+        modal.className =
+            "modal-box vk-feed-settings-modal";
+
+        modal.dataset.pagescount =
+            pagesCount;
+
+
+        modal.innerHTML =
+
+            '<div class="modal-head vk-feed-settings-header">' +
+
+                '<b>Настройки ленты</b>' +
+
+                '<span class="vk-feed-settings-close" ' +
+                      'title="Закрыть">' +
+                    '×' +
+                '</span>' +
+
+            '</div>' +
+
+
+            '<div class="tabs-bar vk-feed-settings-tabs">' +
+
+                '<div class="tab-item selected vk-feed-settings-tab" ' +
+                     'data-tab="main">' +
+
+                    'Основные' +
+
+                '</div>' +
+
+                '<div class="tab-item vk-feed-settings-tab" ' +
+                     'data-tab="ignored">' +
+
+                    'Игнорируемые источники' +
+
+                '</div>' +
+
+            '</div>' +
+
+
+            '<div class="modal-body vk-feed-settings-content">' +
+
+
+                '<div class="vk-feed-settings-main">' +
+
+                    '<div class="vk-feed-setting">' +
+
+                        '<label for="vkFeedPosts">' +
+                            'Записей на странице' +
+                        '</label>' +
+
+                        '<select id="vkFeedPosts" ' +
+                                'class="form-input vk-feed-select">' +
+
+                            '<option value="1">1</option>' +
+                            '<option value="5">5</option>' +
+                            '<option value="10">10</option>' +
+                            '<option value="20">20</option>' +
+                            '<option value="30">30</option>' +
+                            '<option value="40">40</option>' +
+                            '<option value="50">50</option>' +
+
+                        '</select>' +
+
+                    '</div>' +
+
+
+                    '<div class="vk-feed-setting">' +
+
+                        '<label for="vkFeedPage">' +
+                            'Начать со страницы' +
+                        '</label>' +
+
+                        '<input type="number" ' +
+                               'id="vkFeedPage" ' +
+                               'class="form-input vk-feed-input" ' +
+                               'min="1" ' +
+                               'max="' +
+                               pagesCount +
+                               '" ' +
+                               'value="' +
+                               currentPage +
+                               '">' +
+
+                    '</div>' +
+
+
+                    '<label class="vk-feed-checkbox">' +
+
+                        '<input type="checkbox" ' +
+                               'id="vkFeedIgnored" ' +
+                               (
+                                   currentIgnored
+                                       ? "checked"
+                                       : ""
+                               ) +
+                               '>' +
+
+                        '<span>' +
+                            'Показывать записи игнорируемых источников' +
+                        '</span>' +
+
+                    '</label>' +
+
+
+                    '<label class="vk-feed-checkbox">' +
+
+                        '<input type="checkbox" ' +
+                               'id="vkFeedAlien" ' +
+                               (
+                                   currentAlien
+                                       ? "checked"
+                                       : ""
+                               ) +
+                               '>' +
+
+                        '<span>' +
+                            'Показывать записи со стен других пользователей' +
+                        '</span>' +
+
+                    '</label>' +
+
+                '</div>' +
+
+
+                '<div class="vk-feed-settings-ignored" ' +
+                     'style="display:none;">' +
+
+                    '<div class="vk-feed-ignored-loading">' +
+                        'Загрузка...' +
+                    '</div>' +
+
+                '</div>' +
+
+
+            '</div>' +
+
+
+            '<div class="modal-foot vk-feed-settings-footer">' +
+
+                '<button type="button" ' +
+                        'class="btn-vk secondary vk-feed-button vk-feed-button-cancel">' +
+
+                    'Отмена' +
+
+                '</button>' +
+
+
+                '<button type="button" ' +
+                        'class="btn-vk vk-feed-button vk-feed-button-primary">' +
+
+                    'Применить' +
+
+                '</button>' +
+
+            '</div>';
+
+
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+
+        feedSettingsOverlay = overlay;
+
+
+        /*
+         * Выставляем текущее количество постов.
+         */
+        var postsSelect =
+            modal.querySelector("#vkFeedPosts");
+
+
+        if (postsSelect) {
+
+            var postOption =
+                postsSelect.querySelector(
+                    'option[value="' +
+                    currentPosts +
+                    '"]'
+                );
+
+            if (postOption) {
+
+                postOption.selected = true;
+
+            } else {
+
+                postsSelect.value = "10";
+
+            }
+
+        }
+
+
+        /*
+         * Закрытие.
+         */
+        modal.querySelector(
+            ".vk-feed-settings-close"
+        ).addEventListener(
+            "click",
+            closeFeedSettings
+        );
+
+
+        modal.querySelector(
+            ".vk-feed-button-cancel"
+        ).addEventListener(
+            "click",
+            closeFeedSettings
+        );
+
+
+        overlay.addEventListener(
+            "click",
+            function (event) {
+
+                if (event.target === overlay)
+                    closeFeedSettings();
+
+            }
+        );
+
+
+        /*
+         * Применение.
+         */
+        modal.querySelector(
+            ".vk-feed-button-primary"
+        ).addEventListener(
+            "click",
+            function () {
+
+                applyFeedSettings(modal);
+
+            }
+        );
+
+
+        /*
+         * Вкладки.
+         */
+        modal.querySelectorAll(
+            ".vk-feed-settings-tab"
+        ).forEach(function (tab) {
+
+            tab.addEventListener(
+                "click",
+                function () {
+
+                    modal.querySelectorAll(
+                        ".vk-feed-settings-tab"
+                    ).forEach(function (item) {
+
+                        item.classList.remove(
+                            "selected"
+                        );
+
+                    });
+
+
+                    tab.classList.add("selected");
+
+
+                    var main =
+                        modal.querySelector(
+                            ".vk-feed-settings-main"
+                        );
+
+                    var ignored =
+                        modal.querySelector(
+                            ".vk-feed-settings-ignored"
+                        );
+
+
+                    if (tab.dataset.tab === "main") {
+
+                        main.style.display = "";
+                        ignored.style.display = "none";
+
+                    } else {
+
+                        main.style.display = "none";
+                        ignored.style.display = "";
+
+                        loadIgnoredSources(
+                            ignored
+                        );
+
+                    }
+
+                }
+            );
+
+        });
+
+
+        /*
+         * Кнопка "Убрать" в списке игнорируемых источников.
+         * Настоящий VKAPI: newsfeed.deleteBan (user_ids/group_ids).
+         */
+        modal.addEventListener("click", function (event) {
+
+            var button = event.target.closest(
+                ".vk-feed-unignore-button"
+            );
+
+            if (!button)
+                return;
+
+            var id = parseInt(button.dataset.id, 10);
+
+            if (!id)
+                return;
+
+            button.disabled = true;
+
+            var params = id > 0
+                ? { user_ids: String(id) }
+                : { group_ids: String(Math.abs(id)) };
+
+            window.OVKAPI.call("newsfeed.deleteBan", params)
+                .then(function () {
+
+                    var row = button.closest(".vk-feed-ignored-item");
+
+                    if (row)
+                        row.remove();
+
+                })
+                .catch(function (e) {
+
+                    button.disabled = false;
+
+                    if (typeof showToast === "function")
+                        showToast(e.message || "Ошибка", "red");
+
+                });
+
+        });
+
+
+        /*
+         * ESC.
+         */
+        function escapeHandler(event) {
+
+            if (event.key === "Escape") {
+
+                closeFeedSettings();
+
+                document.removeEventListener(
+                    "keydown",
+                    escapeHandler
+                );
+
+            }
+
+        }
+
+        document.addEventListener(
+            "keydown",
+            escapeHandler
+        );
+
+
+        /*
+         * Плавное появление.
+         */
+        requestAnimationFrame(function () {
+
+            overlay.classList.add(
+                "visible"
+            );
+
+        });
+
+    }
+
+
+    /*
+     * =========================================================
+     * COMPOSER
+     * =========================================================
+     */
+
+    window.OvkWallComposer = {
+
+        getWrite: function (element) {
+
+            if (!element)
+                return null;
+
+            return element.id === "write"
+                ? element
+                : element.closest(
+                    "#write, .wall-form, .ovk-post-form"
+                );
+
+        },
+
+
+        showButtons: function (write) {
+
+            if (!write)
+                return;
+
+            var buttons =
+                write.querySelector(
+                    ".post-buttons"
+                );
+
+            if (buttons)
+                buttons.style.display = "block";
+
+        },
+
+
+        toggleMenu: function (write) {
+
+            if (!write)
+                return;
+
+            var menu =
+                write.querySelector(
+                    ".ovk-wall-attachment-menu"
+                );
+
+            if (menu)
+                menu.classList.toggle(
+                    "hidden"
+                );
+
+        },
+
+
+        closeMenu: function (write) {
+
+            if (!write)
+                return;
+
+            var menu =
+                write.querySelector(
+                    ".ovk-wall-attachment-menu"
+                );
+
+            if (menu)
+                menu.classList.add(
+                    "hidden"
+                );
+
+        },
+
+
+        triggerUpload: function (
+            event,
+            button,
+            type
+        ) {
+
+            if (event) {
+
+                event.preventDefault();
+                event.stopPropagation();
+
+            }
+
+
+            var write =
+                this.getWrite(button);
+
+            if (!write)
+                return;
+
+
+            this.closeMenu(write);
+            this.showButtons(write);
+
+            this.choosePhotoNative(write);
+
+        },
+
+
+        choosePhotoNative: function (write) {
+
+            var self = this;
+
+            var form =
+                write.querySelector("form") ||
+                write;
+
+
+            var horizontal =
+                form.querySelector(
+                    ".post-horizontal"
+                );
+
+
+            if (!horizontal) {
+
+                horizontal =
+                    document.querySelector(
+                        "#write .post-horizontal"
+                    );
+
+            }
+
+
+            var input =
+                document.createElement("input");
+
+
+            input.type = "file";
+            input.accept = "image/*";
+            input.name = "photo[]";
+            input.multiple = true;
+            input.style.display = "none";
+
+
+            document.body.appendChild(input);
+
+
+            input.addEventListener(
+                "change",
+                function () {
+
+                    var files =
+                        Array.from(
+                            input.files || []
+                        );
+
+
+                    input.remove();
+
+
+                    if (!files.length)
+                        return;
+
+
+                    var contextId =
+                        write.dataset.id ||
+                        document.getElementById(
+                            "write"
+                        ).dataset.id;
+
+
+                    var formData =
+                        new FormData();
+
+
+                    for (
+                        var i = 0;
+                        i < files.length;
+                        i++
+                    ) {
+
+                        formData.append(
+                            "photo_" + i,
+                            files[i]
+                        );
+
+                    }
+
+
+                    formData.append(
+                        "count",
+                        files.length
+                    );
+
+
+                    var csrfMeta =
+                        document.querySelector(
+                            'meta[name="csrf"]'
+                        );
+
+
+                    var csrf =
+                        (
+                            csrfMeta
+                                ? (
+                                    csrfMeta.content ||
+                                    csrfMeta.getAttribute("value")
+                                )
+                                : ""
+                        ) ||
+                        (
+                            form.querySelector(
+                                'input[name="hash"]'
+                            ) || {}
+                        ).value;
+
+
+                    formData.append(
+                        "hash",
+                        csrf
+                    );
+
+
+                    var temporary =
+                        document.createElement("div");
+
+
+                    temporary.className =
+                        "attachment-item upload-item lagged";
+
+
+                    temporary.innerHTML =
+                        '<div style="' +
+                            'width:64px;' +
+                            'height:64px;' +
+                            'background:var(--color-background-secondary);' +
+                            'display:flex;' +
+                            'align-items:center;' +
+                            'justify-content:center;' +
+                            'font-size:10px;' +
+                            'color:var(--color-text-tertiary);' +
+                        '">' +
+                            'Загрузка...' +
+                        '</div>';
+
+
+                    if (horizontal)
+                        horizontal.appendChild(
+                            temporary
+                        );
+
+
+                    fetch(
+                        "/photos/upload?upload_context=" +
+                        encodeURIComponent(contextId),
+                        {
+                            method: "POST",
+                            body: formData,
+                            credentials: "same-origin"
+                        }
+                    )
+                    .then(function (response) {
+
+                        return response.json();
+
+                    })
+                    .then(function (response) {
+
+                        if (temporary.parentNode)
+                            temporary.remove();
+
+
+                        if (
+                            response.success &&
+                            response.photos
+                        ) {
+
+                            var hiddenHoriz =
+                                form.querySelector(
+                                    'input[name="horizontal_attachments"]'
+                                );
+
+
+                            var hiddenAttach =
+                                form.querySelector(
+                                    'input[name="attachments"]'
+                                );
+
+
+                            if (!hiddenAttach) {
+
+                                hiddenAttach =
+                                    document.createElement(
+                                        "input"
+                                    );
+
+                                hiddenAttach.type =
+                                    "hidden";
+
+                                hiddenAttach.name =
+                                    "attachments";
+
+                                hiddenAttach.value =
+                                    "";
+
+                                form.appendChild(
+                                    hiddenAttach
+                                );
+
+                            }
+
+
+                            response.photos.forEach(
+                                function (photo) {
+
+                                    var descriptor =
+                                        photo.target ||
+                                        (
+                                            "photo" +
+                                            (
+                                                photo.pretty_id ||
+                                                photo.id
+                                            )
+                                        );
+
+
+                                    if (hiddenHoriz) {
+
+                                        var horizontalList =
+                                            hiddenHoriz.value
+                                                ? hiddenHoriz.value
+                                                    .split(",")
+                                                    .filter(Boolean)
+                                                : [];
+
+
+                                        if (
+                                            horizontalList.indexOf(
+                                                descriptor
+                                            ) === -1 &&
+                                            horizontalList.indexOf(
+                                                String(
+                                                    photo.pretty_id
+                                                )
+                                            ) === -1
+                                        ) {
+
+                                            horizontalList.push(
+                                                descriptor
+                                            );
+
+                                        }
+
+
+                                        hiddenHoriz.value =
+                                            horizontalList.join(
+                                                ","
+                                            );
+
+                                    }
+
+
+                                    if (hiddenAttach) {
+
+                                        var attachList =
+                                            hiddenAttach.value
+                                                ? hiddenAttach.value
+                                                    .split(",")
+                                                    .filter(Boolean)
+                                                : [];
+
+
+                                        if (
+                                            attachList.indexOf(
+                                                descriptor
+                                            ) === -1
+                                        ) {
+
+                                            attachList.push(
+                                                descriptor
+                                            );
+
+                                        }
+
+
+                                        hiddenAttach.value =
+                                            attachList.join(
+                                                ","
+                                            );
+
+                                    }
+
+
+                                    var thumb =
+                                        document.createElement(
+                                            "div"
+                                        );
+
+
+                                    thumb.className =
+                                        "attachment-item upload-item";
+
+
+                                    thumb.innerHTML =
+                                        '<img src="' +
+                                        escapeHtml(
+                                            photo.url
+                                        ) +
+                                        '" style="' +
+                                            'width:64px;' +
+                                            'height:64px;' +
+                                            'object-fit:cover;' +
+                                            'display:block;' +
+                                        '">';
+
+
+                                    var removeButton =
+                                        document.createElement(
+                                            "a"
+                                        );
+
+
+                                    removeButton.href =
+                                        "javascript:void(0)";
+
+                                    removeButton.className =
+                                        "remove-attach";
+
+                                    removeButton.innerHTML =
+                                        "&times;";
+
+
+                                    removeButton.onclick =
+                                        function (event) {
+
+                                            event.stopPropagation();
+
+                                            thumb.remove();
+
+
+                                            if (
+                                                hiddenHoriz
+                                            ) {
+
+                                                hiddenHoriz.value =
+                                                    hiddenHoriz.value
+                                                        .split(",")
+                                                        .filter(
+                                                            function (
+                                                                value
+                                                            ) {
+
+                                                                return (
+                                                                    value !==
+                                                                        descriptor &&
+                                                                    value !==
+                                                                        String(
+                                                                            photo.pretty_id
+                                                                        )
+                                                                );
+
+                                                            }
+                                                        )
+                                                        .join(",");
+
+                                            }
+
+
+                                            if (
+                                                hiddenAttach
+                                            ) {
+
+                                                hiddenAttach.value =
+                                                    hiddenAttach.value
+                                                        .split(",")
+                                                        .filter(
+                                                            function (
+                                                                value
+                                                            ) {
+
+                                                                return (
+                                                                    value !==
+                                                                    descriptor
+                                                                );
+
+                                                            }
+                                                        )
+                                                        .join(",");
+
+                                            }
+
+                                        };
+
+
+                                    thumb.appendChild(
+                                        removeButton
+                                    );
+
+
+                                    if (horizontal) {
+
+                                        horizontal.appendChild(
+                                            thumb
+                                        );
+
+                                    }
+
+                                }
+                            );
+
+
+                            self.showButtons(
+                                write
+                            );
+
+                        }
+
+                    })
+                    .catch(function (error) {
+
+                        if (temporary.parentNode)
+                            temporary.remove();
+
+
+                        alert(
+                            "Ошибка сети: " +
+                            error.message
+                        );
+
+                    });
+
+                }
+            );
+
+
+            input.click();
+
+        }
+
+    };
+
+
+    /*
+     * =========================================================
+     * ИНИЦИАЛИЗАЦИЯ
+     * =========================================================
+     */
+
+    function initEvents() {
+
+
+        /*
+         * Настройки ленты.
+         *
+         * Используем capture, чтобы штатный OpenVK
+         * обработчик не открыл второе окно.
+         */
+        document.addEventListener(
+            "click",
+            function (event) {
+
+                var settingsLink =
+                    event.target.closest(
+                        "#__feed_settings_link"
+                    );
+
+
+                if (!settingsLink)
+                    return;
+
+
+                event.preventDefault();
+                event.stopPropagation();
+                event.stopImmediatePropagation();
+
+
+                openFeedSettings(
+                    settingsLink
+                );
+
+            },
+            true
+        );
+
+
+        /*
+         * Composer textarea.
+         */
+        document.querySelectorAll(
+            ".ovk-post-form textarea"
+        ).forEach(function (textarea) {
+
+            if (textarea.dataset.bound)
+                return;
+
+            textarea.dataset.bound = "1";
+
+
+            var open =
+                function () {
+
+                    var write =
+                        OvkWallComposer.getWrite(
+                            textarea
+                        );
+
+                    OvkWallComposer.showButtons(
+                        write
+                    );
+
+                };
+
+
+            textarea.addEventListener(
+                "focus",
+                open
+            );
+
+            textarea.addEventListener(
+                "click",
+                open
+            );
+
+            textarea.addEventListener(
+                "input",
+                open
+            );
+
+        });
+
+
+        /*
+         * Attachment menu.
+         */
+        document.querySelectorAll(
+            ".menu_toggler"
+        ).forEach(function (button) {
+
+            if (button.dataset.bound)
+                return;
+
+            button.dataset.bound = "1";
+
+
+            button.addEventListener(
+                "click",
+                function (event) {
+
+                    event.preventDefault();
+                    event.stopPropagation();
+
+
+                    var write =
+                        OvkWallComposer.getWrite(
+                            button
+                        );
+
+
+                    OvkWallComposer.toggleMenu(
+                        write
+                    );
+
+                }
+            );
+
+        });
+
+
+        /*
+         * Закрытие attachment menu.
+         */
+        document.addEventListener(
+            "click",
+            function (event) {
+
+                if (
+                    !event.target.closest(
+                        ".ovk-wall-attachment-area"
+                    )
+                ) {
+
+                    document.querySelectorAll(
+                        ".ovk-wall-attachment-menu"
+                    ).forEach(
+                        function (menu) {
+
+                            menu.classList.add(
+                                "hidden"
+                            );
+
+                        }
+                    );
+
+                }
+
+            }
+        );
+
+    }
+
+
+    /*
+     * Запускаем после загрузки DOM.
+     */
+    if (
+        document.readyState === "loading"
+    ) {
+
+        document.addEventListener(
+            "DOMContentLoaded",
+            initEvents
+        );
+
+    } else {
+
+        initEvents();
+
+    }
+
+})();
+</script>
+
+<style>
+
+/* =========================================================
+   БЛОКИ ЛЕНТЫ
+   ========================================================= */
+
+section.wall.wall_block.vk-clean-wall {
+    border-top: none !important;
+    margin-top: -1px !important;
+    position: relative;
+    z-index: 1;
+}
+
+
+.vk-clean-wall .page-header,
+.vk-clean-wall .vk-wall-header {
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    padding: 10px;
+
+    background: var(--color-background);
+
+    border-top: none !important;
+    border-bottom: none !important;
+
+    box-shadow: none !important;
+
+    box-sizing: border-box;
+
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        Helvetica,
+        Arial,
+        sans-serif;
+
+}
+
+
+.vk-header-title {
+
+    font-size: 13px;
+    font-weight: 700;
+
+    color: var(--color-primary-strong);
+
+}
+
+
+.vk-header-all {
+
+    font-size: 13px;
+    font-weight: 700;
+
+    color: var(--color-primary-strong);
+
+    text-decoration: none;
+
+}
+
+
+.vk-header-all:hover {
+    text-decoration: underline;
+}
+
+
+/* =========================================================
+   COMPOSER
+   ========================================================= */
+
+.vk-wall-card {
+
+    background: var(--color-background-secondary);
+
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+
+    padding: 10px 14px 11px 14px;
+
+    box-sizing: border-box;
+
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        Helvetica,
+        Arial,
+        sans-serif;
+
+}
+
+
+.vk-post-textarea {
+
+    display: block;
+
+    width: 100%;
+
+    box-sizing: border-box;
+
+    height: 52px;
+    min-height: 52px;
+
+    padding: 7px 9px;
+
+    margin: 0;
+
+    font-size: 13px;
+    line-height: 17px;
+
+    color: var(--color-text-strong);
+
+    border: 1px solid var(--color-border-input);
+    border-radius: 2px;
+
+    outline: none;
+
+    background: var(--color-background);
+
+    resize: vertical;
+
+    box-shadow:
+        inset 0 1px 2px rgba(0, 0, 0, 0.07);
+
+    font-family: inherit;
+
+}
+
+
+.vk-post-textarea::placeholder {
+
+    color: var(--color-text-muted);
+    opacity: 1;
+
+}
+
+
+.vk-post-textarea:focus {
+
+    border-color: var(--color-primary);
+
+}
+
+
+.vk-post-actions-panel {
+
+    display: block;
+
+    margin-top: 8px;
+
+}
+
+
+.vk-composer-bottom {
+
+    display: flex;
+
+    justify-content: space-between;
+    align-items: center;
+
+    min-height: 28px;
+
+}
+
+
+.vk-bottom-left {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+}
+
+
+.vk-btn-attach {
+
+    display: inline-block;
+
+    box-sizing: border-box;
+
+    height: 28px;
+    line-height: 26px;
+
+    padding: 0 13px;
+
+    background:
+        var(--color-background-secondary)
+        linear-gradient(
+            180deg,
+            #f5f7f8 0%,
+            #e8ebed 100%
+        );
+
+    border: 1px solid var(--color-border-input);
+    border-radius: 2px;
+
+    color: var(--color-primary-strong);
+
+    font-size: 12px;
+    font-weight: 700;
+
+    text-decoration: none;
+
+    cursor: pointer;
+
+    user-select: none;
+
+    box-shadow:
+        0 1px 1px rgba(0, 0, 0, 0.05);
+
+    text-align: center;
+
+}
+
+
+.vk-btn-attach:hover {
+
+    background:
+        var(--color-background-hover)
+        linear-gradient(
+            180deg,
+            #f9fafb 0%,
+            #edf0f2 100%
+        );
+
+    border-color: var(--color-border-input);
+
+    text-decoration: none;
+
+}
+
+
+.vk-btn-attach:active {
+
+    background: var(--color-background-secondary);
+
+    box-shadow:
+        inset 0 1px 2px rgba(0, 0, 0, 0.1);
+
+}
+
+
+.vk-nsfw-inline {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 5px;
+
+    font-size: 12px;
+
+    color: var(--color-text-secondary);
+
+    cursor: pointer;
+
+    user-select: none;
+
+    line-height: 1;
+
+}
+
+
+.vk-nsfw-inline input {
+
+    margin: 0;
+
+    cursor: pointer;
+
+}
+
+
+.vk-btn-submit {
+
+    display: inline-block;
+
+    box-sizing: border-box;
+
+    height: 28px;
+    line-height: 26px;
+
+    padding: 0 18px;
+
+    background:
+        var(--color-primary)
+        linear-gradient(
+            180deg,
+            var(--color-primary) 0%,
+            var(--color-primary-strong) 100%
+        );
+
+    border: 1px solid var(--color-primary-strong);
+    border-radius: 2px;
+
+    color: var(--color-background) !important;
+
+    font-size: 12.5px;
+    font-weight: 700;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 1px 1px rgba(0, 0, 0, 0.15);
+
+    text-align: center;
+
+    outline: none;
+
+}
+
+
+.vk-btn-submit:hover {
+
+    background:
+        var(--color-primary)
+        linear-gradient(
+            180deg,
+            var(--color-primary-light) 0%,
+            var(--color-primary) 100%
+        );
+
+    border-color: var(--color-primary-strong);
+
+}
+
+
+.vk-btn-submit:active {
+
+    background: var(--color-primary-strong);
+
+    box-shadow:
+        inset 0 1px 2px rgba(0, 0, 0, 0.2);
+
+}
+
+
+/* =========================================================
+   ATTACHMENT MENU
+   ========================================================= */
+
+.ovk-wall-attachment-area {
+
+    position: relative;
+
+    display: inline-block;
+
+}
+
+
+.vk-styled-menu {
+
+    position: absolute;
+
+    left: 0;
+
+    bottom: calc(100% + 5px);
+
+    background: var(--color-background);
+
+    border: 1px solid var(--color-border-input);
+
+    border-radius: 3px;
+
+    box-shadow:
+        0 2px 8px rgba(0, 0, 0, 0.15);
+
+    min-width: 165px;
+
+    padding: 4px 0;
+
+    z-index: 1000;
+
+}
+
+
+.vk-styled-menu.hidden {
+    display: none !important;
+}
+
+
+.vk-styled-menu a {
+
+    display: block;
+
+    padding: 6px 14px;
+
+    font-size: 12.5px;
+
+    color: var(--color-primary-strong);
+
+    text-decoration: none;
+
+    line-height: 1.4;
+
+}
+
+
+.vk-styled-menu a:hover {
+
+    background-color: var(--color-background-secondary);
+
+    color: var(--color-primary-strong);
+
+}
+
+
+/* =========================================================
+   CHECKBOXES
+   ========================================================= */
+
+.vk-post-checkboxes {
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 10px;
+
+    font-size: 12px;
+
+    color: var(--color-text-secondary);
+
+    margin-bottom: 6px;
+
+}
+
+
+.vk-post-checkboxes label {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 4px;
+
+    cursor: pointer;
+
+}
+
+
+/* =========================================================
+   PREVIEW
+   ========================================================= */
+
+.post-horizontal {
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 6px;
+
+    margin-bottom: 6px;
+
+}
+
+
+.post-horizontal .attachment-item {
+
+    position: relative;
+
+    width: 64px;
+    height: 64px;
+
+    border-radius: 2px;
+
+    overflow: hidden;
+
+    background: var(--color-background);
+
+    border: 1px solid var(--color-border-input);
+
+    display: inline-block;
+
+}
+
+
+.post-horizontal .attachment-item img {
+
+    width: 100%;
+    height: 100%;
+
+    object-fit: cover;
+
+}
+
+
+.post-horizontal .attachment-item.lagged {
+
+    opacity: 0.5;
+
+}
+
+
+.post-horizontal
+.attachment-item
+.remove-attach {
+
+    position: absolute;
+
+    top: 2px;
+    right: 2px;
+
+    width: 16px;
+    height: 16px;
+
+    background: rgba(0, 0, 0, 0.6);
+
+    color: var(--color-background);
+
+    border-radius: 50%;
+
+    text-align: center;
+
+    line-height: 14px;
+
+    font-size: 11px;
+
+    cursor: pointer;
+
+    text-decoration: none;
+
+}
+
+
+/* =========================================================
+   FEED SETTINGS MODAL
+   ========================================================= */
+
+.vk-feed-settings-overlay {
+
+    position: fixed;
+
+    inset: 0;
+
+    background: rgba(0, 0, 0, 0.42);
+
+    z-index: 99999;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    opacity: 0;
+
+    transition:
+        opacity 0.15s ease;
+
+    padding: 20px;
+
+    box-sizing: border-box;
+
+}
+
+
+.vk-feed-settings-overlay.visible {
+
+    opacity: 1;
+
+}
+
+
+/* .modal-box уже даёт фон/границу/тень/радиус/шрифт — здесь только
+   ширина этого конкретного окна (шире стандартных 380px, чтобы
+   поместился список игнорируемых источников). */
+.vk-feed-settings-modal {
+
+    width: 100%;
+
+    max-width: 520px;
+
+}
+
+
+/* Заголовок — настоящий .modal-head (см. @layout.xml), просто с
+   кнопкой закрытия — под неё .modal-head получил display:flex. */
+.vk-feed-settings-close {
+
+    border: 0;
+
+    background: transparent;
+    padding: 0;
+
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+
+    font-size: 18px;
+    line-height: 1;
+
+    color: inherit;
+    opacity: 0.85;
+
+    cursor: pointer;
+
+}
+
+
+.vk-feed-settings-close:hover {
+
+    opacity: 1;
+
+}
+
+
+/* =========================================================
+   TABS — теперь настоящий .tabs-bar/.tab-item темы (_ui.xml),
+   без отдельного стиля: markup генерируется с этими классами
+   напрямую (см. openFeedSettings() выше), .vk-feed-settings-tabs/
+   -tab остались только как функциональные хуки для JS
+   (data-tab, переключение .selected), своего вида не имеют.
+   ========================================================= */
+
+
+/* =========================================================
+   MODAL CONTENT
+   ========================================================= */
+
+.vk-feed-settings-content {
+
+    min-height: 250px;
+
+    max-height: 55vh;
+
+    overflow-y: auto;
+
+}
+
+
+.vk-feed-settings-main {
+
+    padding: 16px;
+
+}
+
+/* Поля настроек визуально соответствуют форме на странице «Настройки»
+   темы (.form-label/.form-input, _ui.xml) — подпись мелким прописным
+   текстом над полем, то же поле ввода с той же рамкой/радиусом/фокусом. */
+.vk-feed-setting {
+
+    display: block;
+
+    margin-bottom: 14px;
+
+}
+
+
+.vk-feed-setting > label {
+
+    display: block;
+    margin-bottom: 4px;
+
+    font-size: 11px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: .2px;
+
+    color: var(--color-text-muted);
+
+}
+
+
+/* Само поле — существующий .form-input темы (_ui.xml), классы
+   .vk-feed-select/-input остались только как хуки под #id-запросы
+   в JS; здесь лишь единственное, чего .form-input не задаёт сам:
+   ограничение ширины (иначе растягивается на все 520px модалки)
+   и фокус-кольцо (.form-input рассчитан на контекст form.form,
+   которого в этой модалке нет — она собирается без <form>). */
+.vk-feed-select, .vk-feed-input {
+    max-width: 220px;
+}
+
+.vk-feed-select:focus, .vk-feed-input:focus {
+
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(91,127,166,.18);
+    outline: none;
+
+}
+
+
+.vk-feed-checkbox {
+
+    display: flex;
+
+    align-items: flex-start;
+
+    gap: 8px;
+
+    margin-top: 13px;
+
+    font-size: 12.5px;
+
+    line-height: 18px;
+
+    color: var(--color-text-secondary);
+
+    cursor: pointer;
+
+}
+
+
+.vk-feed-checkbox input {
+
+    margin-top: 2px;
+    accent-color: var(--color-primary);
+
+}
+
+
+/* =========================================================
+   MODAL FOOTER
+   ========================================================= */
+
+.vk-feed-settings-footer {
+
+    display: flex;
+
+    justify-content: flex-end;
+
+    gap: 8px;
+
+    padding: 10px 14px;
+
+    background: var(--color-background-hover);
+
+    border-top: 1px solid var(--color-border);
+
+}
+
+
+.vk-feed-button {
+
+    height: 29px;
+
+    padding: 0 16px;
+
+    border-radius: 2px;
+
+    font-size: 12px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+}
+
+
+.vk-feed-button-cancel {
+
+    background: var(--color-background-secondary);
+
+    border: 1px solid var(--color-border-input);
+
+    color: var(--color-text-secondary);
+
+}
+
+
+.vk-feed-button-primary {
+
+    background: var(--color-primary);
+
+    border: 1px solid var(--color-primary-strong);
+
+    color: var(--color-background);
+
+}
+
+
+.vk-feed-button-primary:hover {
+
+    background: #6488ad;
+
+}
+
+
+/* =========================================================
+   IGNORED SOURCES
+   ========================================================= */
+
+.vk-feed-settings-ignored {
+
+    padding: 10px;
+
+}
+
+
+.vk-feed-ignored-item {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 9px;
+
+    min-height: 52px;
+
+    padding: 7px 6px;
+
+    border-bottom: 1px solid var(--color-background-secondary);
+
+}
+
+
+.vk-feed-ignored-avatar {
+
+    flex: 0 0 40px;
+
+}
+
+
+.vk-feed-ignored-avatar img,
+.vk-feed-avatar-placeholder {
+
+    width: 40px;
+    height: 40px;
+
+    display: block;
+
+    object-fit: cover;
+
+    border-radius: 3px;
+
+}
+
+
+.vk-feed-avatar-placeholder {
+
+    background: var(--color-background-secondary);
+
+}
+
+
+.vk-feed-ignored-name {
+
+    flex: 1;
+
+    color: var(--color-primary-strong);
+
+    font-size: 12.5px;
+
+    font-weight: 600;
+
+    text-decoration: none;
+
+}
+
+
+.vk-feed-ignored-name:hover {
+
+    text-decoration: underline;
+
+}
+
+
+.vk-feed-unignore-button {
+
+    height: 26px;
+
+    padding: 0 9px;
+
+    border: 1px solid var(--color-border-input);
+
+    border-radius: 2px;
+
+    background: var(--color-background-secondary);
+
+    color: var(--color-text-secondary);
+
+    font-size: 11px;
+
+    cursor: pointer;
+
+}
+
+
+.vk-feed-unignore-button:hover {
+
+    background: #e4e8eb;
+
+}
+
+
+.vk-feed-empty,
+.vk-feed-ignored-loading {
+
+    padding: 35px 15px;
+
+    text-align: center;
+
+    color: var(--color-text-tertiary);
+
+    font-size: 12.5px;
+
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 600px) {
+
+    .vk-feed-settings-overlay {
+
+        padding: 10px;
+
+        align-items: flex-end;
+
+    }
+
+
+    .vk-feed-settings-modal {
+
+        max-width: none;
+
+        border-radius: 5px 5px 0 0;
+
+    }
+
+
+    .vk-feed-settings-content {
+
+        max-height: 65vh;
+
+    }
+
+
+    .vk-feed-setting {
+
+        display: block;
+
+    }
+
+
+    .vk-feed-setting > label {
+
+        display: block;
+
+        width: auto;
+
+        margin-bottom: 5px;
+
+    }
+
+
+    .vk-feed-select,
+    .vk-feed-input {
+
+        width: 100%;
+
+    }
+
+
+    .vk-feed-settings-tab {
+
+        flex: 1;
+
+        padding-left: 5px;
+        padding-right: 5px;
+
+    }
+
+
+    .vk-feed-ignored-item {
+
+        flex-wrap: wrap;
+
+    }
+
+
+    .vk-feed-unignore-button {
+
+        margin-left: 49px;
+
+    }
+
+}
+
+</style>
+
+{/syntax}
+
+{/block}

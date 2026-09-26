@@ -1,0 +1,36 @@
+{*  ---------------------------------------------------------
+    VIDEO — карточка видео в списках (закладки и т.п.).
+
+    $video — объект Video OpenVK.
+
+    id="videoOpen" и data-id обязательны: за ними следит
+    штатный JS, который открывает видео поверх страницы.
+    Вид — как в списке видео (превью 104×68 + длительность).
+    --------------------------------------------------------- *}
+
+<div class="list-item">
+
+    <div class="list-item-cover">
+        <a href="/video{$video->getPrettyId()}" id="videoOpen" data-id="{$video->getPrettyId()}">
+            <span class="vkx-thumb">
+                <img src="{$video->getThumbnailURL()}" alt="" loading="lazy" />
+                <span n:if="$video->getLength()" class="vkx-dur">{$video->getFormattedLength()}</span>
+            </span>
+        </a>
+    </div>
+
+    <div class="list-item-info">
+        <a class="list-item-title" href="/video{$video->getPrettyId()}">
+            <span id="videoOpen" data-id="{$video->getPrettyId()}" class="vkx-video-title">{$video->getName()}</span>
+        </a>
+
+        <div class="list-item-desc">
+            <div n:if="$video->getDescription()" class="vkx-clamp">{$video->getDescription()}</div>
+            <div class="vkx-muted">
+                {_video_uploaded} {$video->getPublicationTime()}
+                <a n:if="$video->getCommentsCount() > 0" href="/video{$video->getPrettyId()}#comments">&bull; {_comments} ({$video->getCommentsCount()})</a>
+            </div>
+        </div>
+    </div>
+
+</div>

@@ -1,0 +1,132 @@
+{extends "../@layout.xml"}
+{block title}{_menu_help}{/block}
+
+{block header}
+    {$ticket->getName()}
+{/block}
+
+{block content}
+    <script>
+        function markAnswer(id, mark) {
+            let url = "/support/comment/" + id + "/rate/" + mark + "?hash=" + {urlencode($csrfToken)};
+            $.ajax(url, {
+                error: errorHandler,
+                success: success(id, mark)
+            });
+        }
+
+        function success(id, mark) {
+            if(mark == 1)
+                document.getElementById("markText-" + id).innerHTML = {_support_good_answer_user};
+            else
+                document.getElementById("markText-" + id).innerHTML = {_support_bad_answer_user};
+
+            document.getElementById("markLinks-" + id).remove();
+        }
+
+        function errorHandler(id, mark) {
+            document.getElementById("markText-" + id).innerHTML = {_error};
+        }
+
+        function closeTicket() {
+            let url = `/support/ticket${{$ticket->getId()}}/close?hash=${{urlencode($csrfToken)}}`;
+            $.ajax(url, {
+                error: () => alert(tr("error")),
+                success: () => location.reload()
+            });
+        }
+    </script>
+
+    {if $ticket->isDeleted() == 0}
+        <div style="padding: 10px 12px; background: var(--color-background-secondary); border-bottom: 1px solid var(--color-border-list);">
+            <b style="font-size: 14px;">{$ticket->getName()}</b>
+            <div style="font-size: 12px; color: var(--color-text-muted); margin-top: 2px;">{_status}: {$ticket->getStatus()}</div>
+        </div>
+        {if $ticket->getType() === 1}
+            <div style="padding: 10px 12px; background: #eef8ec; border-bottom: 1px solid #cfe6c9; font-size: 12.5px;">
+                {_you_can_close_this_ticket_1} <a onClick="closeTicket()">{_you_can_close_this_ticket_2}</a>.
+            </div>
+        {/if}
+        <div style="padding: 10px 12px; border-bottom: 1px solid var(--color-border-list); font-size: 13px; line-height: 1.4;">
+            {$ticket->getText()|noescape}
+        </div>
+        <div style="padding: 6px 12px; font-size: 11.5px; color: var(--color-text-tertiary); display: flex; gap: 10px; border-bottom: 1px solid var(--color-border-list);">
+            <span>{$ticket->getTime()}</span>
+            <a href="/support/delete/{$id}?hash={$csrfToken}">{_delete}</a>
+        </div>
+        {if $ticket->getType() !== 2}
+            <div class="vkx-form">
+                <form action="/al_comments/create/support/{$id}" method="post">
+                    <textarea name="text" rows="3"></textarea>
+                    <input type="hidden" name="hash" value="{$csrfToken}" />
+                    <div class="form-actions">
+                        <input type="submit" value="{_write}" class="button button-primary" />
+                    </div>
+                </form>
+            </div>
+        {/if}
+        <p n:if="!$comments">{_no_comments}</p>
+        {var $printedSupportGreeting = false}
+        <div class="comment-item" n:foreach="$comments as $comment">
+            {if $comment->getUType() === 0}
+                <img class="avatar" src="{$comment->getUser()->getAvatarUrl('miniscule')}" alt="" />
+            {else}
+                <img class="avatar" src="{$comment->getAvatar()}" style="filter: hue-rotate({$comment->getColorRotation()}deg);" alt="" />
+            {/if}
+            <div class="c-body">
+                {if $comment->getUType() === 0}
+                    <div class="c-author">
+                        <a href="{$comment->getUser()->getURL()}">{$comment->getUser()->getFullName()}</a>
+                        {($comment->getUser()->isFemale() ? tr("post_writes_f") : tr("post_writes_m"))}
+                    </div>
+                {elseif ($comment->getUType() === 1)}
+                    <div class="c-author">
+                        {$comment->getAuthorName()} {_post_writes_m}
+                    </div>
+                {/if}
+                <div class="c-text" id="text{$comment->getId()}">
+                    {if $comment->getUType() === 1 && !$printedSupportGreeting}
+                        {var $printedSupportGreeting = true}
+                        {tr("support_greeting_hi", $ticket->getUser()->getFullName())}
+                        <br />
+                        <br />
+
+                        {$comment->getText()|noescape}
+                        <br />
+                        <br />
+
+                        {tr("support_greeting_regards", \OPENVK_ROOT_CONF["openvk"]["appearance"]["name"])|noescape}
+                    {else}
+                        {$comment->getText()|noescape}
+                    {/if}
+                </div>
+                <div class="c-foot">
+                    <span>{$comment->getTime()}</span>
+
+                    {if $comment->getUType() === 0}
+                        <a href="/support/comment/{$comment->getId()}/delete?hash={urlencode($csrfToken)}">{_delete}</a>
+                    {/if}
+
+                    {if $comment->getUType() === 1}
+                        {var $isLikedByUser = $comment->isLikedByUser()}
+                        <strong id="markText-{$comment->getId()}">
+                        {if !is_null($isLikedByUser)}
+                            {if $comment->isLikedByUser()}
+                                {_support_good_answer_user}
+                            {else}
+                                {_support_bad_answer_user}
+                            {/if}
+                        {/if}
+                        </strong>
+                        <span id="markLinks-{$comment->getId()}">
+                            {if is_null($isLikedByUser)}
+                                <a onClick="markAnswer({$comment->getId()}, 1)">{_support_rate_good_answer}</a>
+                                <a onClick="markAnswer({$comment->getId()}, 2)">{_support_rate_bad_answer}</a>
+                            {/if}
+                        </span>
+                    {/if}
+                </div>
+            </div>
+        </div>
+    {/if}
+{/block}

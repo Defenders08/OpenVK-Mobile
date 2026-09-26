@@ -1,0 +1,73 @@
+{*  =========================================================
+    UPLOAD PHOTO — загрузка фотографий (/photos/upload).
+
+    Загрузка целиком построена на штатном JS OpenVK
+    (al_photos.js), поэтому здесь нет <form>: скрипт сам
+    отправляет файлы и рисует превью.
+
+    ХУКИ, КОТОРЫЕ ОН ИЩЕТ (удалять нельзя):
+      id="uploadButton" + name="files[]" — поле выбора файлов;
+      id="fakeButton"                    — видимая кнопка;
+      class="insertThere", class="insertAgain",
+      class="insertPhotos" / id="photos" — контейнеры превью;
+      id="endUploading"                  — кнопка завершения;
+      id="album"                         — в какой альбом грузим.
+
+    Строка `uploadButton.value = ''` перенесена из оригинала:
+    она сбрасывает подпись у скрытого input[type=file].
+    ========================================================= *}
+
+{extends "../@layout.xml"}
+
+{block title}{_upload_photo}{/block}
+
+{block header}
+    {_upload_photo}
+{/block}
+
+{block content}
+
+    <div class="tabs">
+        <div class="tab"><a href="/album{$album->getPrettyId()}/edit">{_edit_album}</a></div>
+        <div id="activetabs" class="tab"><a id="act_tab_a" href="#">{_add_photos}</a></div>
+    </div>
+
+    {* Скрытое поле выбора файлов. Его «нажимает» кнопка ниже. *}
+    <input type="file" accept=".jpg,.png,.gif" name="files[]" multiple
+           class="button photo_ajax_upload_button" id="uploadButton" style="display:none">
+
+    <div class="photo_upload_container">
+
+        <div class="insertThere"></div>
+
+        <div class="whiteBox">
+            <h4>{_uploading_photos_from_computer}</h4>
+
+            <b>{_admin_limits}</b>
+            <ul>
+                <li>{_supported_formats}</li>
+                <li>{_max_load_photos}</li>
+            </ul>
+
+            <div class="insertAgain form-actions">
+                <input type="button" class="button button-primary" id="fakeButton"
+                       onclick="uploadButton.click()" value="{_upload_picts}">
+            </div>
+
+            <p><b>{_tip}</b>: {_tip_ctrl}</p>
+        </div>
+
+        {* Сюда JS вставляет превью загруженных фото. *}
+        <div class="insertPhotos" id="photos"></div>
+
+        <input type="button" class="button" style="display:none" id="endUploading" value="{_end_uploading}">
+    </div>
+
+    {* Альбом, в который грузим. JS читает значение по id. *}
+    <input n:ifset="$_GET['album']" type="hidden" id="album" value="{$_GET['album']}" />
+
+    <script>
+        uploadButton.value = ''
+    </script>
+
+{/block}

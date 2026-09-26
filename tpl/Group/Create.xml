@@ -1,0 +1,25 @@
+{extends "../@layout.xml"}
+{block title}{_create_group}{/block}
+
+{block header}
+    {_create_group}
+{/block}
+
+{block content}
+<section id="sec_create_group" class="page-section active">
+    <form method="POST" enctype="multipart/form-data">
+        <div class="set-group">
+            <label>{_name}</label>
+            <input type="text" name="name" value="" placeholder="{_name}" required>
+        </div>
+        <div class="set-group">
+            <label>{_description}</label>
+            <textarea name="about" rows="4" style="resize: vertical;"></textarea>
+        </div>
+        <div class="set-group" style="background: var(--color-background-secondary); text-align: center;">
+            <input type="hidden" name="hash" value="{$csrfToken}" />
+            <button type="submit" class="btn-vk" style="width: 100%; max-width: 280px;">{_create}</button>
+        </div>
+    </form>
+</section>
+{/block}

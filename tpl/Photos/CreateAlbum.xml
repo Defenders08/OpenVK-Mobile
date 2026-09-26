@@ -1,0 +1,38 @@
+{*  =========================================================
+    CREATE ALBUM — создание альбома (/albums/create).
+
+    POST с полями name, desc, hash (CSRF).
+    $club задан, если альбом создаётся в сообществе.
+    ========================================================= *}
+
+{extends "../@layout.xml"}
+
+{block title}{_creating_album}{/block}
+
+{block header}
+    {_creating_album}
+{/block}
+
+{block content}
+    <h4>{_creating_album}</h4>
+
+    <form class="form" method="post" enctype="multipart/form-data">
+
+        <div class="form-field">
+            <label class="form-label" for="name">{_name}</label>
+            <input class="form-input" id="name" type="text" name="name" />
+        </div>
+
+        <div class="form-field">
+            <label class="form-label" for="desc">{_description}</label>
+            <textarea class="form-input" id="desc" name="desc"></textarea>
+        </div>
+
+        <input type="hidden" name="hash" value="{$csrfToken}" />
+
+        <div class="form-actions">
+            <input type="submit" class="button button-primary" name="submit" value="{_create}" />
+        </div>
+
+    </form>
+{/block}

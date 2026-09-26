@@ -1,0 +1,483 @@
+{* =========================================================
+    DOCUMENTS LIST — список документов (/docs, /docs-{gid}).
+
+    $docs, $count, $tabs, $current_tab, $order, $tags,
+    $locale_string, $paginatorConf, $canUpload, $group.
+
+    Вкладки 3 и 4 — это картинки и GIF: они показываются
+    сеткой, остальные — списком ($is_gallery).
+
+    ХУКИ JS (al_docs.js) — НЕ УДАЛЯТЬ:
+      #docs_page_wrapper                 — корень страницы;
+      id="upload_entry_point" + data-gid — открыть окно загрузки;
+      select[name="docs_sort"]           — смена сортировки.
+
+    ВИЗУАЛ: раздел переоформлен под мобильный дизайн
+    (см. вёрстку OpenVK Mobile Classic, экран «Документы»).
+    Все исходные классы/id сохранены, добавлены только новые
+    классы vkx-* для оформления и стили в конце файла.
+    ========================================================= *}
+
+{extends "../@layout.xml"}
+
+{block title}
+    {if !isset($group)}{_my_documents_objectively}{else}{_documents_of_group}{/if}
+{/block}
+
+{block header}
+    {if !isset($group)}
+        {_my_documents}
+    {else}
+        <a href="{$group->getURL()}">{$group->getCanonicalName()}</a> &raquo; {_my_documents}
+    {/if}
+{/block}
+
+{block content}
+
+    {var $is_gallery = $current_tab == 3 || $current_tab == 4}
+
+    <div id="docs_page_wrapper" class="vkx-docs-skin">
+
+        {* ---------- ВКЛАДКИ ТИПОВ ---------- *}
+        <div class="tabs vkx-tabs-bar">
+            <div n:class="tab, $current_tab == 0 ? 'vkx-active'" n:attr="id => $current_tab == 0 ? 'activetabs'">
+                <a href="?tab=0" n:attr="id => $current_tab == 0 ? 'act_tab_a'">{_document_type_0}</a>
+            </div>
+
+            <div n:foreach="$tabs as $tab" n:class="tab, $tab['type'] == $current_tab ? 'vkx-active'" n:attr="id => $tab['type'] == $current_tab ? 'activetabs'">
+                <a href="?tab={$tab['type']}" n:attr="id => $tab['type'] == $current_tab ? 'act_tab_a'">
+                    {$tab["name"]}
+                    <span n:if="$tab['count'] > 1" class="special_counter vkx-count">{$tab["count"]}</span>
+                </a>
+            </div>
+
+            <input n:if="$canUpload" id="upload_entry_point" class="button vkx-tab-upload" type="button"
+                   value="{_upload_button}" {if isset($group)}data-gid="{$group->getId()}"{/if}>
+        </div>
+
+        {* ---------- ПОИСК (штатный /search?section=docs) ---------- *}
+        <div class="vkx-search vkx-search-panel">
+            <form action="/search" method="get">
+                <input type="hidden" name="section" value="docs" />
+                <input type="text" name="q" value="" placeholder="{_search_by_documents}" />
+            </form>
+        </div>
+
+        {* ---------- СОРТИРОВКА ---------- *}
+        <div n:if="$count > 0" class="summaryBar vkx-phead">
+            <div class="summary"><b>{tr($locale_string, $count)}</b></div>
+
+            <select n:if="$count > 3" name="docs_sort">
+                <option n:attr="selected => $order == 0" value="0">{_documents_sort_add}</option>
+                <option n:attr="selected => $order == 1" value="1">{_documents_sort_alphabet}</option>
+                <option n:attr="selected => $order == 2" value="2">{_documents_sort_size}</option>
+            </select>
+        </div>
+
+        {* Метки документов — обычные ссылки на поиск. *}
+        <div n:if="!$is_gallery && sizeof($tags) > 0" class="vkx-doc-tags vkx-tags-row">
+            <a class="is-active">{_documents_all}</a>
+            <a n:foreach="$tags as $tag" href="/search?section=docs&tags={urlencode($tag)}">{$tag}</a>
+        </div>
+
+        {* ---------- СПИСОК / ГАЛЕРЕЯ ---------- *}
+        <div n:class="scroll_container, $is_gallery ? 'vkx-doc-grid', !$is_gallery ? 'vkx-doc-list'" id="search_page">
+            {if $count > 0}
+                {foreach $docs as $doc}
+                    {if $is_gallery}
+                        {include "components/image.xml", doc => $doc, scroll_context => true,
+                                 club => isset($group) ? $group : NULL}
+                    {else}
+                        {include "components/doc.xml", doc => $doc, scroll_context => true,
+                                 club => isset($group) ? $group : NULL}
+                    {/if}
+                {/foreach}
+            {else}
+                {include "../components/error.xml", description => tr("there_is_no_documents_alright")}
+            {/if}
+        </div>
+
+        {include "../components/paginator.xml", conf => $paginatorConf}
+
+    </div>
+
+    {* ---------- ОКНО ЗАГРУЗКИ ДОКУМЕНТОВ (drag&drop + имя/теги/приватность) ---------- *}
+    <div id="custom_doc_upload_modal" class="vkx-doc-modal-overlay" style="display: none;">
+        <div class="vkx-doc-modal-dialog">
+            <div class="vkx-doc-modal-header">
+                <h3>{_upload_button}</h3>
+                <button type="button" class="vkx-doc-modal-close" onclick="closeDocUploadModal()">&times;</button>
+            </div>
+            <div class="vkx-doc-modal-body">
+                <form id="custom_doc_upload_form" enctype="multipart/form-data">
+                    <input type="hidden" name="gid" id="modal_upload_gid" value="{if isset($group)}{$group->getId()}{/if}">
+
+                    <div class="vkx-file-drop-area" id="drop_area">
+                        <span class="vkx-file-msg">Перетащите файл сюда или нажмите для выбора</span>
+                        {* Имя поля "blob" — это то, что реально читает обработчик загрузки
+                           документов (см. al_docs.js: fd.append("blob", file)). Раньше поле
+                           называлось "document"/"file" и сервер получал файл, которого не ждал. *}
+                        <input type="file" name="blob" id="modal_file_input" required>
+                    </div>
+
+                    <div id="selected_file_name" class="vkx-selected-file-name" style="display: none;"></div>
+
+                    <div class="vkx-doc-upload-progress" id="upload_progress_bar" style="display: none;">
+                        <div class="vkx-doc-upload-progress-fill" id="upload_progress_fill"></div>
+                    </div>
+
+                    <div class="vkx-doc-modal-field">
+                        <label class="vkx-doc-modal-label" for="modal_doc_name">{_name}</label>
+                        <input class="vkx-doc-modal-input" type="text" name="name" id="modal_doc_name" maxlength="200">
+                    </div>
+
+                    <div class="vkx-doc-modal-field">
+                        <label class="vkx-doc-modal-label" for="modal_doc_tags">{_tags}</label>
+                        <input class="vkx-doc-modal-input" type="text" name="tags" id="modal_doc_tags">
+                    </div>
+
+                    <div class="vkx-doc-modal-field">
+                        <label class="vkx-doc-modal-label" for="modal_doc_folder">{_accessbility}</label>
+                        <select class="vkx-doc-modal-input" name="folder" id="modal_doc_folder">
+                            <option value="0">Private file</option>
+                            <option value="4">Public file</option>
+                        </select>
+                    </div>
+
+                    <label class="vkx-doc-modal-checkbox">
+                        <input type="checkbox" name="owner_hidden" id="modal_doc_owner_hidden"> Owner is hidden
+                    </label>
+                </form>
+            </div>
+            <div class="vkx-doc-modal-footer">
+                <button type="button" class="vkx-btn vkx-btn-secondary" onclick="closeDocUploadModal()">Отмена</button>
+                <button type="button" class="vkx-btn vkx-btn-primary" id="modal_submit_btn" onclick="submitDocUpload()">Загрузить</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* =========================================================
+           СКИН «OpenVK Mobile Classic» ДЛЯ РАЗДЕЛА ДОКУМЕНТОВ
+           ========================================================= */
+
+        #docs_page_wrapper { background: var(--color-background); }
+
+        /* ---- вкладки ---- */
+        #docs_page_wrapper .tabs.vkx-tabs-bar {
+            background: var(--color-background); padding: 7px 8px; border-bottom: 1px solid var(--color-border);
+            display: flex; flex-wrap: wrap; gap: 5px; align-items: center;
+        }
+        #docs_page_wrapper .tab.vkx-tab-item {
+            padding: 4px 10px 5px 10px; font-size: 13px; color: var(--color-primary-strong);
+            background: var(--color-background-status); border: 1px solid var(--color-border); border-radius: 3px;
+            box-shadow: inset 0 1px 0 var(--color-background), 0 1px 1px rgba(0, 0, 0, 0.04);
+            transition: all 0.12s ease;
+        }
+        #docs_page_wrapper .tab.vkx-tab-item a { color: inherit; text-decoration: none; display: flex; align-items: center; line-height: 1.3; }
+        #docs_page_wrapper .tab.vkx-tab-item:hover { background: var(--color-background-status); border-color: var(--color-border-input); color: var(--color-primary-strong); }
+        #docs_page_wrapper .tab.vkx-tab-item.vkx-active {
+            background: linear-gradient(to bottom, var(--color-primary) 0%, var(--color-primary-strong) 100%);
+            border: 1px solid var(--color-primary-strong); border-top-color: var(--color-primary-strong); border-bottom-color: var(--color-primary-strong);
+            font-weight: bold; text-shadow: 0 -1px 0 var(--color-primary-shadow);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 1px 2px var(--color-shadow-soft);
+        }
+        #docs_page_wrapper .tab.vkx-tab-item.vkx-active a { color: var(--color-background); }
+        #docs_page_wrapper .special_counter.vkx-count {
+            font-style: normal; font-size: 10px; color: var(--color-primary-strong); background: var(--color-background-secondary);
+            padding: 1px 5px; border-radius: 8px; margin-left: 5px;
+        }
+        #docs_page_wrapper .tab.vkx-tab-item.vkx-active .special_counter.vkx-count { color: var(--color-background); background: rgba(0, 0, 0, 0.18); }
+        #docs_page_wrapper input#upload_entry_point.vkx-tab-upload {
+            margin-left: auto; font-weight: bold; color: var(--color-primary-strong); background: var(--color-background-status);
+            border: 1px solid var(--color-border); padding: 5px 12px; border-radius: 3px; cursor: pointer; font-size: 13px;
+        }
+        #docs_page_wrapper input#upload_entry_point.vkx-tab-upload:hover { background: var(--color-background-status); }
+
+        /* ---- поиск ---- */
+        #docs_page_wrapper .vkx-search.vkx-search-panel { padding: 8px 10px; background: var(--color-background-secondary); border-bottom: 1px solid var(--color-border); }
+        #docs_page_wrapper .vkx-search-panel form { display: flex; }
+        #docs_page_wrapper .vkx-search-panel input[type="text"] {
+            flex: 1; padding: 6px 9px; border: 1px solid var(--color-border-input); border-radius: 3px; background: var(--color-background); font-size: 13px; outline: none;
+        }
+        #docs_page_wrapper .vkx-search-panel input[type="text"]:focus { border-color: var(--color-primary); }
+
+        /* ---- счётчик + сортировка ---- */
+        #docs_page_wrapper .summaryBar.vkx-phead {
+            padding: 8px 10px; background: var(--color-background-secondary); border-bottom: 1px solid var(--color-border-list);
+            font-size: 11px; color: var(--color-text-secondary); display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;
+        }
+        #docs_page_wrapper .summaryBar.vkx-phead b { color: var(--color-text-strong); }
+        #docs_page_wrapper .summaryBar.vkx-phead select {
+            padding: 3px 6px; border: 1px solid var(--color-border-input); border-radius: 3px; background: var(--color-background); font-size: 11px; color: var(--color-text-form);
+        }
+
+        /* ---- метки ---- */
+        #docs_page_wrapper .vkx-doc-tags.vkx-tags-row {
+            display: flex; gap: 6px; padding: 8px 10px; background: var(--color-background-secondary); border-bottom: 1px solid var(--color-border-list); overflow-x: auto; white-space: nowrap;
+        }
+        #docs_page_wrapper .vkx-doc-tags.vkx-tags-row a {
+            padding: 3px 9px; font-size: 11px; border-radius: 10px; background: var(--color-background-status); color: var(--color-primary-strong);
+            border: 1px solid var(--color-border); text-decoration: none; flex-shrink: 0;
+        }
+        #docs_page_wrapper .vkx-doc-tags.vkx-tags-row a.is-active { background: var(--color-primary-strong); color: var(--color-background); border-color: var(--color-primary-strong); }
+
+        /* ---- список ---- */
+        #docs_page_wrapper .vkx-doc-list { background: var(--color-background); }
+        .vkx-doc-row { display: flex; align-items: center; gap: 10px; padding: 10px; border-bottom: 1px solid var(--color-border-list); background: var(--color-background); transition: background 0.1s ease; }
+        .vkx-doc-row:hover { background: var(--color-background-status); }
+        .vkx-doc-icon { width: 36px; height: 36px; border-radius: 3px; flex-shrink: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; background: var(--color-background-secondary); }
+        .vkx-doc-icon .vkx-fileico { display: flex; width: 100%; height: 100%; }
+        .vkx-doc-icon img.doc_icon { width: 100%; height: 100%; object-fit: cover; border-radius: 3px; }
+        .vkx-doc-icon .vkx-noimg {
+            display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;
+            background: var(--color-background-secondary); color: var(--color-primary-strong); font-size: 9px; font-weight: bold; text-transform: uppercase;
+        }
+        .vkx-doc-info { flex: 1; min-width: 0; }
+        .vkx-doc-info > a { display: block; color: var(--color-primary-strong); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .vkx-doc-info > a:hover { text-decoration: underline; }
+        .vkx-doc-info .doc_content_info { font-size: 12px; color: var(--color-text-form); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .vkx-doc-info .doc_tags a { color: var(--color-primary-strong); margin-left: 3px; }
+        .vkx-doc-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+
+        .vkx-btn {
+            display: inline-block; padding: 6px 12px; font-size: 12px; font-weight: bold; border-radius: 2px;
+            text-align: center; line-height: 1.25; cursor: pointer; user-select: none; text-decoration: none !important;
+            transition: background 0.12s ease, transform 0.08s ease; border: none;
+        }
+        .vkx-btn-primary {
+            color: var(--color-background); background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-strong) 100%);
+            border: 1px solid var(--color-primary-strong); text-shadow: 0 -1px 0 var(--color-primary-shadow); box-shadow: inset 0 1px 0 var(--color-highlight-inset);
+        }
+        .vkx-btn-primary:hover { background: linear-gradient(180deg, var(--color-primary-light) 0%, var(--color-primary) 100%); border-color: var(--color-primary-strong); }
+        .vkx-btn-primary:active { background: var(--color-primary); transform: translateY(1px); }
+        .vkx-btn-secondary {
+            color: var(--color-primary-strong); background: linear-gradient(180deg, #f5f8fa 0%, #e6ebf0 100%);
+            border: 1px solid var(--color-border-input); box-shadow: inset 0 1px 0 var(--color-background);
+        }
+        .vkx-btn-secondary:hover { background: linear-gradient(180deg, #ffffff 0%, #edf1f6 100%); color: var(--color-primary-strong); }
+        .vkx-btn-secondary:active { background: var(--color-background-secondary); transform: translateY(1px); }
+
+        .doc_volume.vkx-doc-volume { display: flex; gap: 4px; }
+        .doc_volume.vkx-doc-volume a {
+            width: 24px; height: 24px; border-radius: 3px; display: flex; align-items: center; justify-content: center;
+            background: var(--color-background-secondary); border: 1px solid #d8e0e8; color: #5a7a9e; cursor: pointer; text-decoration: none; font-size: 11px; font-weight: bold;
+        }
+        .doc_volume.vkx-doc-volume a:hover { background: #e9eff5; }
+        #edit_icon::before { content: "\270E"; }
+        #report_icon::before { content: "!"; }
+        #add_icon::before { content: "+"; }
+        #remove_icon::before { content: "\00D7"; }
+
+        /* ---- галерея (картинки / GIF) ---- */
+        #docs_page_wrapper .vkx-doc-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; padding: 4px; background: var(--color-background-hover); }
+        .vkx-doc-grid-item { position: relative; padding-bottom: 100%; background: var(--color-background-secondary); overflow: hidden; border-radius: 2px; display: block; }
+        .vkx-doc-grid-item img.docGalleryItem_main_preview { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+        .vkx-doc-grid-item img.docGalleryItem_gif_preview { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.15s ease; }
+        .vkx-doc-grid-item:hover img.docGalleryItem_gif_preview, .vkx-doc-grid-item:active img.docGalleryItem_gif_preview { opacity: 1; }
+        .vkx-doc-grid-item .play-button { position: absolute; left: 6px; top: 6px; width: 18px; height: 18px; border-radius: 50%; background: rgba(0, 0, 0, 0.6); z-index: 2; }
+        .vkx-doc-grid-item .play-button::before { content: ""; position: absolute; left: 6px; top: 4px; border-style: solid; border-width: 5px 0 5px 8px; border-color: transparent transparent transparent var(--color-background); }
+        .vkx-doc-grid-item .doc_top_panel { position: absolute; top: 4px; right: 4px; display: flex; gap: 4px; z-index: 3; opacity: 0; transition: opacity 0.15s ease; }
+        .vkx-doc-grid-item:hover .doc_top_panel, .vkx-doc-grid-item:active .doc_top_panel { opacity: 1; }
+        .vkx-doc-grid-item .doc_volume_action {
+            width: 20px; height: 20px; border-radius: 3px; background: var(--color-overlay); cursor: pointer;
+            display: flex; align-items: center; justify-content: center; color: var(--color-background); font-size: 10px; font-weight: bold;
+        }
+        .vkx-doc-grid-item .doc_bottom_panel {
+            position: absolute; left: 0; right: 0; bottom: 0; z-index: 2;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0));
+            color: var(--color-background); padding: 16px 6px 5px; font-size: 10px; opacity: 0; transition: opacity 0.15s ease;
+        }
+        .vkx-doc-grid-item:hover .doc_bottom_panel, .vkx-doc-grid-item:active .doc_bottom_panel, .vkx-doc-grid-item .doc_bottom_panel.info_shown { opacity: 1; }
+        .vkx-doc-grid-item .doc_name { display: block; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .vkx-doc-grid-item .doc_bottom_panel_size { opacity: 0.85; }
+
+        /* ---- окно загрузки ---- */
+        .vkx-doc-modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--color-overlay);
+            display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 12px;
+        }
+        .vkx-doc-modal-dialog {
+            background: var(--color-background); border-radius: 3px; width: 100%; max-width: 400px;
+            box-shadow: 0 4px 20px var(--color-shadow-strong); overflow: hidden; border: 1px solid var(--color-primary-strong);
+            box-sizing: border-box; max-height: 92vh; display: flex; flex-direction: column;
+        }
+        .vkx-doc-modal-header {
+            display: flex; align-items: center; justify-content: space-between; padding: 9px 12px;
+            background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-strong) 100%); color: var(--color-background);
+            text-shadow: 0 -1px 0 var(--color-primary-shadow); border-bottom: 1px solid var(--color-primary-strong);
+            box-shadow: inset 0 1px 0 var(--color-highlight-inset); flex-shrink: 0;
+        }
+        .vkx-doc-modal-header h3 { margin: 0; font-size: 13px; font-weight: bold; }
+        .vkx-doc-modal-close { background: none; border: none; font-size: 18px; line-height: 1; cursor: pointer; color: var(--color-background); opacity: 0.85; padding: 0; }
+        .vkx-doc-modal-close:hover { opacity: 1; }
+        .vkx-doc-modal-body { padding: 14px; overflow-y: auto; }
+        .vkx-doc-modal-footer { display: flex; justify-content: flex-end; gap: 8px; padding: 10px 12px; background: var(--color-background-secondary); border-top: 1px solid var(--color-border); flex-shrink: 0; }
+        .vkx-file-drop-area {
+            position: relative; border: 2px dashed #cbd6e0; border-radius: 6px; padding: 26px 14px;
+            text-align: center; cursor: pointer; background: var(--color-background-secondary); transition: border-color 0.15s ease, background 0.15s ease;
+        }
+        .vkx-file-drop-area:hover, .vkx-file-drop-area.vkx-drag-over { border-color: var(--color-primary); background: #f2f6fa; }
+        .vkx-file-drop-area input[type="file"] { position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+        .vkx-file-msg { font-size: 12px; color: #7a8794; line-height: 1.4; }
+        .vkx-selected-file-name { margin-top: 10px; font-size: 12px; font-weight: bold; color: var(--color-primary-strong); word-break: break-all; }
+        .vkx-doc-upload-progress { margin-top: 12px; height: 6px; background: #e2e7ec; border-radius: 3px; overflow: hidden; }
+        .vkx-doc-upload-progress-fill { height: 100%; width: 0%; background: linear-gradient(180deg, var(--color-primary), var(--color-primary-strong)); transition: width 0.1s linear; }
+        .vkx-doc-modal-field { margin-top: 12px; }
+        .vkx-doc-modal-label { display: block; font-size: 11px; font-weight: bold; color: var(--color-text-muted); text-transform: uppercase; margin-bottom: 5px; }
+        .vkx-doc-modal-input { width: 100%; padding: 7px 8px; border: 1px solid var(--color-border-input); border-radius: 3px; background: var(--color-background); font-size: 13px; color: var(--color-text-dark); box-sizing: border-box; }
+        .vkx-doc-modal-input:focus { outline: none; border-color: var(--color-primary); }
+        .vkx-doc-modal-checkbox { display: flex; align-items: center; gap: 6px; margin-top: 12px; font-size: 12px; color: var(--color-text-form); }
+    </style>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var uploadBtn = document.getElementById('upload_entry_point');
+            var modal = document.getElementById('custom_doc_upload_modal');
+            var fileInput = document.getElementById('modal_file_input');
+            var fileNameDisplay = document.getElementById('selected_file_name');
+            var gidInput = document.getElementById('modal_upload_gid');
+            var dropArea = document.getElementById('drop_area');
+
+            if (uploadBtn && modal) {
+                uploadBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    // al_docs.js тоже слушает клик по #upload_entry_point (делегированием на
+                    // document) и открывает свой диалог загрузки. Без stopPropagation клик
+                    // всплывал бы до document, и открывались бы ОБА окна одновременно.
+                    e.stopPropagation();
+                    var gid = uploadBtn.getAttribute('data-gid');
+                    if (gid && gidInput) {
+                        gidInput.value = gid;
+                    }
+                    modal.style.display = 'flex';
+                });
+            }
+
+            function showSelectedFile(file) {
+                if (!file) return;
+                fileNameDisplay.textContent = 'Выбран файл: ' + file.name;
+                fileNameDisplay.style.display = 'block';
+            }
+
+            if (fileInput) {
+                fileInput.addEventListener('change', function() {
+                    if (fileInput.files && fileInput.files.length > 0) {
+                        showSelectedFile(fileInput.files[0]);
+                    }
+                });
+            }
+
+            // ---- drag & drop: раньше зона просто выглядела как dropzone,
+            // но перетаскивание файла ничего не делало — теперь работает. ----
+            if (dropArea && fileInput) {
+                ['dragenter', 'dragover'].forEach(function(evt) {
+                    dropArea.addEventListener(evt, function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        dropArea.classList.add('vkx-drag-over');
+                    });
+                });
+                ['dragleave', 'drop'].forEach(function(evt) {
+                    dropArea.addEventListener(evt, function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        dropArea.classList.remove('vkx-drag-over');
+                    });
+                });
+                dropArea.addEventListener('drop', function(e) {
+                    var dt = e.dataTransfer;
+                    if (dt && dt.files && dt.files.length > 0) {
+                        try {
+                            fileInput.files = dt.files;
+                        } catch (err) {
+                            /* Safari/старые браузеры могут запретить прямое присвоение — тогда просто покажем имя. */
+                        }
+                        showSelectedFile(dt.files[0]);
+                    }
+                });
+            }
+        });
+
+        function closeDocUploadModal() {
+            var modal = document.getElementById('custom_doc_upload_modal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+            var form = document.getElementById('custom_doc_upload_form');
+            if (form) form.reset();
+            var fileNameDisplay = document.getElementById('selected_file_name');
+            if (fileNameDisplay) fileNameDisplay.style.display = 'none';
+            var progressBar = document.getElementById('upload_progress_bar');
+            if (progressBar) progressBar.style.display = 'none';
+            var dropArea = document.getElementById('drop_area');
+            if (dropArea) dropArea.classList.remove('vkx-drag-over');
+        }
+
+        function submitDocUpload() {
+            var fileInput = document.getElementById('modal_file_input');
+            if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+                alert('Пожалуйста, выберите файл для загрузки.');
+                return;
+            }
+
+            var form = document.getElementById('custom_doc_upload_form');
+            // FormData(form) сразу подхватывает name/tags/folder/owner_hidden/blob —
+            // раньше файл дублировался под чужими именами ("document"/"file"), а
+            // настоящий обработчик читает поле "blob" (см. al_docs.js).
+            var formData = new FormData(form);
+
+            // "ajax" — обязательный флаг: без него сервер отвечает не JSON'ом,
+            // а обычной страницей/редиректом, что и роняло загрузку с ошибкой
+            // на стороне Router (несовпадение веток обработки CSRF).
+            formData.append('ajax', 1);
+
+            {ifset $csrfToken}
+            formData.append('hash', '{$csrfToken}');
+            {/ifset}
+
+            var progressBar = document.getElementById('upload_progress_bar');
+            var progressFill = document.getElementById('upload_progress_fill');
+            var submitBtn = document.getElementById('modal_submit_btn');
+
+            if (progressBar) progressBar.style.display = 'block';
+            if (submitBtn) submitBtn.disabled = true;
+
+            // gid, как и в штатном al_docs.js, передаётся параметром запроса,
+            // а не только полем формы — так его читает обработчик группы.
+            var gidField = document.getElementById('modal_upload_gid');
+            var gidVal = gidField ? gidField.value : '';
+            var uploadUrl = '/docs/upload' + (gidVal ? ('?gid=' + encodeURIComponent(gidVal)) : '');
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', uploadUrl, true);
+
+            xhr.upload.onprogress = function(e) {
+                if (e.lengthComputable && progressFill) {
+                    var percentComplete = (e.loaded / e.total) * 100;
+                    progressFill.style.width = percentComplete + '%';
+                }
+            };
+
+            xhr.onload = function() {
+                if (submitBtn) submitBtn.disabled = false;
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    window.location.reload();
+                } else {
+                    var errText = xhr.responseText ? '\n' + xhr.responseText.substring(0, 200) : '';
+                    alert('Ошибка при загрузке документа. Код: ' + xhr.status + errText);
+                    if (progressBar) progressBar.style.display = 'none';
+                }
+            };
+
+            xhr.onerror = function() {
+                if (submitBtn) submitBtn.disabled = false;
+                alert('Произошла сетевая ошибка при отправке запроса.');
+                if (progressBar) progressBar.style.display = 'none';
+            };
+
+            xhr.send(formData);
+        }
+    </script>
+
+{/block}

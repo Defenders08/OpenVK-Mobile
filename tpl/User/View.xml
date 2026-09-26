@@ -1,0 +1,272 @@
+{*  ========================================================
+    USER VIEW — страница профиля (/id{N}).
+
+    Переменные от UserPresenter:
+      $user              — владелец страницы;
+      $thisUser          — кто смотрит (может отсутствовать);
+      $albums, $albumsCount, $videos, $videosCount,
+      $notes, $notesCount, $audios, $audiosCount,
+      $audioStatus       — аудиозапись в статусе;
+      $additionalFields — дополнительные поля профиля;
+      $blacklist_status, $ignore_status;
+      $backdrops         — фон профиля.
+
+    ПРАВА ДОСТУПА.
+    $user->getPrivacyPermission('...', $thisUser) — настоящая
+    проверка приватности OpenVK. Каждое такое условие обязано
+    остаться: без него чужие данные утекут посторонним.
+
+    ХУКИ JS — НЕ УДАЛЯТЬ:
+      id="bigAvatar", .avatarDelete, ._add_image (upload_image /
+        set_image) — загрузка и удаление аватара (avatar-edit);
+      changeStatus() и форма status_popup_form + id="status_editor",
+        id="page_status_text", класс page_status_edit_button —
+        смена статуса;
+      id="_bl_toggler" + data-val/data-id — чёрный список;
+      id="__ignoreSomeone" + data-val/data-id — игнор;
+      id="videoOpen" + data-id — открытие видео;
+      hidePanel(this, N) — сворачивание боковых блоков (штатная
+        функция OpenVK, отдельный CSS/JS писать не нужно);
+      showIncreaseRatingDialog(...), reportUser(...),
+      banUser(), warnUser(), toggleBanInSupport() — штатные
+        диалоги, объявлены внизу файла.
+    ======================================================== *}
+
+{extends "../@layout.xml"}
+
+
+{block title}{$user->getCanonicalName()}{/block}
+
+{block headIncludes}
+    {* Мета-теги отдаём только если страница открыта для чтения. *}
+    {if $user->getPrivacyPermission('page.read', $thisUser ?? NULL)}
+        {var $ogDescription = $user->getStatus() ?? $user->getDescription() ?? ''}
+        {var $ogDescriptionTrimmed = mb_strlen($ogDescription) > 200 ? mb_substr($ogDescription, 0, 197) . '...' : $ogDescription}
+        {var $avatarUrl = $user->getAvatarUrl('normal')}
+
+        <meta property="og:title" content="{$user->getCanonicalName()} — {$instance_name}" />
+        <meta property="og:url" content="{$baseUrl}{$user->getURL()}" />
+        <meta property="og:image" content="{$avatarUrl}" />
+        <meta property="og:type" content="profile" />
+        <meta property="og:first_name" content="{$user->getFirstName()}" />
+        <meta property="og:last_name" content="{$user->getLastName()}" />
+        <meta n:if="!is_null($user->getShortcode())" property="og:username" content="{$user->getShortcode()}" />
+        <meta property="og:gender" content="{($user->isFemale() ? 'fe' : '')}male" />
+        <meta n:if="!empty($ogDescriptionTrimmed)" property="og:description" content="{$ogDescriptionTrimmed}" />
+        <meta name="twitter:title" content="{$user->getCanonicalName()} — {$instance_name}" />
+        <meta name="twitter:image" content="{$avatarUrl}" />
+
+        <script type="application/ld+json">
+            {
+                "@context": "http://schema.org/",
+                "type": "Person",
+                "name": {$user->getCanonicalName()},
+                "url": {$baseUrl . $user->getURL()}
+            }
+        </script>
+    {else}
+        <meta name="robots" content="noindex, noarchive">
+    {/if}
+{/block}
+
+{block header}
+{/block}
+{block content}
+<section id="sec_profile" class="page-section active">
+    {var $thatIsThisUser = isset($thisUser) && $user->getId() == $thisUser->getId()}
+    {var $hasAvatar = !str_contains($user->getAvatarUrl('miniscule'), "/assets/packages/static/openvk/img/camera_200.png")}
+
+    <!-- Карточка пользователя (аватар, имя, галочка, онлайн, статус) -->
+    <div style="padding: 10px; background: var(--color-background-secondary); border-bottom: 1px solid var(--color-border-list); display: flex; gap: 10px;">
+      <div class="avatar_block" style="position: relative; width: 64px; height: 64px; flex-shrink: 0; border-radius: 3px; overflow: hidden;">
+        {if $thatIsThisUser}
+          <img id="bigAvatar" src="{$user->getAvatarUrl('normal')}" style="width: 100%; height: 100%; object-fit: cover; display: block;" alt="Avatar">
+        {else}
+          <a href="{$user->getAvatarLink()|nocheck}">
+              <img src="{$user->getAvatarUrl('normal')}" style="width: 100%; height: 100%; object-fit: cover; display: block;" alt="Avatar">
+          </a>
+        {/if}
+      </div>
+      <div style="flex: 1; min-width: 0;">
+        <div style="font-size: 16px; font-weight: bold; color: var(--color-text-strong);" id="prof_name_display">{$user->getFullName()}
+            <span n:if="$user->isVerified()" class="verified-check large"><svg viewBox="0 0 16 16" width="15" height="15" fill="none">
+                <circle cx="8" cy="8" r="7.5" fill="#4d7198"/><path d="M4.6 8.2l2.3 2.3 4.5-4.5" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span> <span style="font-size:12px; color:var(--color-text-secondary); font-weight:normal;">{$user->getPseudo()}</span></div>
+            <div style="font-size: 11px; color: var(--color-text-muted); margin-top: 1px;">
+            {if $user->isOnline()}
+                {_online}
+            {else}
+                {$user->isFemale() ? tr("was_online_f") : tr("was_online_m")} {$user->getOnline()}
+            {/if}
+        </div>
+
+        <div n:if="$thatIsThisUser" style="font-size: 12px; color: var(--color-text-form); margin-top: 4px; cursor:pointer;"
+             id="profile_status_display" title="{_change_status}"
+             data-current-status="{$audioStatus ? '' : ($user->getStatus() ?? '')}"
+             onclick="openStatusEditor(this.dataset.currentStatus)">
+            {if !$audioStatus}
+                «<span id="page_status_text">{$user->getStatus()}</span>»
+            {else}
+                ♫ {$audioStatus->getName()}
+            {/if}
+        </div>
+        <div n:if="!$thatIsThisUser" style="font-size: 12px; color: var(--color-text-form); margin-top: 4px;">
+            {if !$audioStatus}
+                «{$user->getStatus()}»
+            {else}
+                ♫ {$audioStatus->getName()}
+            {/if}
+        </div>
+      </div>
+    </div>
+
+    <!-- Блок динамических кнопок действий в профиле -->
+    <div style="padding: 8px 10px; background: var(--color-background-secondary); border-bottom: 1px solid var(--color-border-list); display: flex; gap: 6px;">
+        {if isset($thisUser) && $user->getId() == $thisUser->getId()}
+            {* Сценарий 1: Мой профиль *}
+            <a href="/edit" class="btn-vk" style="width: 100%; display: block; text-align: center;">{_edit_page}</a>
+        {else}
+            {* Сценарий 2 и 3: Чужой профиль *}
+            <a href="/im?sel={$user->getId()}" class="btn-vk" style="flex: 1; display: block; text-align: center;">{_send_message}</a>
+
+            {* Состояние дружбы через штатный механизм OpenVK: getSubscriptionStatus()
+               0 = не друзья / нет заявок, 1 = входящая заявка (юзер добавил нас),
+               2 = исходящая заявка (мы добавили, ждём подтверждения), 3 = уже друзья.
+               Тот же самый механизм используется в User/Friends.xml (форма /setSub/user). *}
+            {var $subStatus = $user->getSubscriptionStatus($thisUser)}
+
+            {if $subStatus === 0}
+                <form action="/setSub/user" method="post" class="profile_link_form" style="flex: 1;">
+                    <input type="hidden" name="act" value="add" />
+                    <input type="hidden" name="id" value="{$user->getId()}" />
+                    <input type="hidden" name="hash" value="{$csrfToken}" />
+                    <input type="submit" class="btn-vk profile_link" style="width: 100%;" value="{_friends_add}" />
+                </form>
+            {elseif $subStatus === 1}
+                {* Он нас уже добавил — нам достаточно подтвердить *}
+                <form action="/setSub/user" method="post" class="profile_link_form" style="flex: 1;">
+                    <input type="hidden" name="act" value="add" />
+                    <input type="hidden" name="id" value="{$user->getId()}" />
+                    <input type="hidden" name="hash" value="{$csrfToken}" />
+                    <input type="submit" class="btn-vk profile_link"  style="width: 100%; text-shadow: none;" value="{_friends_accept}" />
+                </form>
+            {elseif $subStatus === 2}
+                {* Мы отправили заявку, ждём его подтверждения — даём возможность отменить *}
+                <form action="/setSub/user" method="post" class="profile_link_form" style="flex: 1;">
+                    <input type="hidden" name="act" value="rem" />
+                    <input type="hidden" name="id" value="{$user->getId()}" />
+                    <input type="hidden" name="hash" value="{$csrfToken}" />
+                    <input type="submit" class="btn-vk profile_link" style="width: 100%; text-shadow: none;" value="{_friends_reject}" />
+                </form>
+            {elseif $subStatus === 3}
+                <form action="/setSub/user" method="post" class="profile_link_form" style="flex: 1;">
+                    <input type="hidden" name="act" value="rem" />
+                    <input type="hidden" name="id" value="{$user->getId()}" />
+                    <input type="hidden" name="hash" value="{$csrfToken}" />
+                    <input type="submit" class="btn-vk profile_link" style="width: 100%; text-shadow: none;" value="{_friends_delete}" />
+                </form>
+            {/if}
+        {/if}
+    </div>
+
+    <!-- Краткая и раскрывающаяся подробная информация -->
+    <div class="profile-info-block">
+      <div class="prof-info-row"><span class="prof-info-label">{_birth_date}:</span> <span class="prof-info-val" id="prof_bday">{$user->getBirthday()}</span></div>
+      <div class="prof-info-row"><span class="prof-info-label">{_hometown}:</span> <span class="prof-info-val" id="prof_city">{$user->getHometown()}</span></div>
+      <div class="prof-info-row"><span class="prof-info-label">{_interests}:</span> <span class="prof-info-val" id="prof_about_display">{$interest}</span></div>
+
+      <!-- Скрытый спойлер подробной информации -->
+      <div id="prof_details_section" class="prof-details-section">
+        <div class="prof-info-row" n:if="!empty($user->getLocalizedMaritalStatus())">
+    <span class="prof-info-label">{_relationship}:</span>
+    <span class="prof-info-val" id="prof_rel">{$user->getLocalizedMaritalStatus()}{if $user->getMaritalStatusUser()} {$user->getMaritalStatusUserPrefix()} <a href="{$user->getMaritalStatusUser()->getURL()}" target="_blank">{$user->getMaritalStatusUser()->getCanonicalName()}</a>{/if}</span>
+        </div>
+
+        <div class="prof-info-row" n:if="!empty($user->getPoliticalViews())">
+            <span class="prof-info-label">{_politViews}:</span>
+            <span class="prof-info-val" id="prof_politics">{_"politViews_" . $user->getPoliticalViews()}</span>
+        </div>
+
+        <div class="prof-info-row">
+            <span class="prof-info-label">{_pronouns}:</span>
+            <span class="prof-info-val" id="prof_pronouns">{$user->isFemale() ? tr("female") : ($user->isNeutral() ? tr("neutral") : tr("male"))}</span>
+        </div>
+
+        <div class="prof-info-row" n:if="!is_null($user->getTelegram())">
+            <span class="prof-info-label">{_telegram}:</span>
+            <span class="prof-info-val" id="prof_telegram"><a href="https://t.me/{$user->getTelegram()}" rel="ugc" target="_blank" id="prof_telegram_link">@{$user->getTelegram()}</a></span>
+        </div>
+
+        <div class="prof-info-row" n:if="!is_null($user->getWebsite())">
+            <span class="prof-info-label">{_personal_website}:</span>
+            <span class="prof-info-val"><a href="{$user->getWebsite()}" rel="ugc" target="_blank" id="prof_site_link">{$user->getWebsite()}</a></span>
+        </div>
+
+        <div class="prof-info-row" n:if="!is_null($user->getFavoriteMusic())">
+            <span class="prof-info-label">{_favorite_music}:</span>
+            <span class="prof-info-val" id="prof_music_display"><span n:foreach="explode(', ', $user->getFavoriteMusic()) as $music"><a href="/search?section=audios&q={urlencode($music)}">{$music}</a>{if !$iterator->last}, {/if}</span></span>
+        </div>
+      </div>
+
+
+      <!-- Кнопка-стрелка для раскрытия блока -->
+      <button type="button" class="btn-toggle-info" id="btn_toggle_info" onclick="toggleProfileDetails()" title="Показать или скрыть подробную информацию">
+        <span id="btn_toggle_info_text">Показать подробную информацию</span>
+        <span class="btn-toggle-info-arrow"><svg viewBox="0 0 16 16" width="11" height="11" fill="currentColor"><path d="M1.646 5.646a.5.5 0 0 1 .708 0L8 11.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708 z"/></svg></span>
+      </button>
+    </div>
+
+    <!-- Быстрые счетчики (Друзья, Группы, Фотографии, Аудио) -->
+     <ul class="m-list" style="border-bottom: 1px solid var(--color-border);">
+    {var $friendCount = $user->getFriendsCount()}
+      <li><a href="/friends{$user->getId()}" style="width: 100%; display: flex; justify-content: space-between;"><b>{_friends}</b> <span style="color:var(--color-text-muted);">{$friendCount}</span></a></li>
+      <li><a href="/groups{$user->getId()}" style="width: 100%; display: flex; justify-content: space-between;"><b>{_groups}</b> <span style="color:var(--color-text-muted);">{tr("groups", $clubsCount)}</span></a></li>
+      <li><a href="/albums{$user->getId()}" style="width: 100%; display: flex; justify-content: space-between;"><b>{_albums}</b> <span style="color:var(--color-text-muted);">{tr("albums", $albumsCount)}</span></a></li>
+      <li><a href="/videos{$user->getId()}" style="width: 100%; display: flex; justify-content: space-between;"><b>{_videos}</b> <span style="color:var(--color-text-muted);">{tr("videos", $videosCount)}</span></a></li>
+      <li><a href="/audios{$user->getId()}" style="width: 100%; display: flex; justify-content: space-between;"><b>{_audios}</b> <span style="color:var(--color-text-muted);">{tr("audios_count", $audiosCount)}</span></a></li>
+    </ul>
+
+<!-- Стена профиля -->
+    <div id="wall_post_form_container">
+        {presenter "openvk!Wall->wallEmbedded", $user->getId()}
+    </div>
+
+</section>
+<style>
+  /* Скрываем блок по умолчанию */
+  #prof_details_section {
+    display: none;
+  }
+  
+  /* Разворот стрелочки при открытии */
+  .btn-toggle-info.active .btn-toggle-info-arrow svg {
+    transform: rotate(180deg);
+  }
+  
+  .btn-toggle-info-arrow svg {
+    transition: transform 0.2s ease;
+  }
+
+</style>
+
+<script>
+  function toggleProfileDetails() {
+    var section = document.getElementById('prof_details_section');
+    var btn = document.getElementById('btn_toggle_info');
+    var btnText = document.getElementById('btn_toggle_info_text');
+
+    if (!section || !btn || !btnText) return;
+
+    var isHidden = window.getComputedStyle(section).display === 'none';
+
+    if (isHidden) {
+      section.style.display = 'block';
+      btnText.textContent = 'Скрыть подробную информацию';
+      btn.classList.add('active');
+    } else {
+      section.style.display = 'none';
+      btnText.textContent = 'Показать подробную информацию';
+      btn.classList.remove('active');
+    }
+  }
+</script>
+{/block}

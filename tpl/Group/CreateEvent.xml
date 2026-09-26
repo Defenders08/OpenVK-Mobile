@@ -1,0 +1,42 @@
+{extends "../@layout.xml"}
+{block title}{_create_event}{/block}
+
+{block header}
+    {_create_event}
+{/block}
+
+{block content}
+<section id="sec_create_event" class="page-section active">
+    <form method="POST" enctype="multipart/form-data">
+        <div class="set-group">
+            <label>{_name}</label>
+            <input type="text" name="name" value="" placeholder="{_name}" required>
+        </div>
+        <div class="set-group">
+            <label>{_description}</label>
+            <textarea name="about" rows="4" style="resize: vertical;"></textarea>
+        </div>
+        <div class="set-group">
+            <label>{_event_start_date}</label>
+            <div style="display: flex; gap: 6px;">
+                <input type="date" name="start_date" style="flex: 1;" required>
+                <input type="time" name="start_time" style="flex: 1;" required>
+            </div>
+        </div>
+        <div class="set-group">
+            <label style="display: flex; align-items: center; gap: 6px; text-transform: none;">
+                <input type="checkbox" name="end_date_checked" value="1" onclick="document.getElementById('finish_date_block').style.display = this.checked ? 'flex' : 'none';">
+                {_event_enable_finish_date}
+            </label>
+            <div id="finish_date_block" style="display: none; gap: 6px; margin-top: 6px;">
+                <input type="date" name="finish_date" style="flex: 1;">
+                <input type="time" name="finish_time" style="flex: 1;">
+            </div>
+        </div>
+        <div class="set-group" style="background: var(--color-background-secondary); text-align: center;">
+            <input type="hidden" name="hash" value="{$csrfToken}" />
+            <button type="submit" class="btn-vk" style="width: 100%; max-width: 280px;">{_create}</button>
+        </div>
+    </form>
+</section>
+{/block}

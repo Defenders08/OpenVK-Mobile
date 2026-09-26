@@ -1,0 +1,86 @@
+{*  =========================================================
+    NOTIFICATION FEED — страница уведомлений (/notifications).
+
+    $iterator — уведомления страницы;
+    $mode     — 'new' или 'archived';
+    $page, $count, $perPage — для пагинатора.
+
+    Разметку самого уведомления рисует не этот файл, а шаблон,
+    который выбирает сам движок:
+        {include $dat->getTemplatePath(), notification => $dat}
+    Эти шаблоны лежат в components/notifications/**.
+    Подменять эту конструкцию нельзя.
+    ========================================================= *}
+
+{extends "../@layout.xml"}
+
+{var $sorting = false}
+
+{block title}{_feedback}{/block}
+
+{block header}
+    {_feedback}
+{/block}
+
+{block content}
+
+    <div n:ifcontent class="tabs">
+        <div n:attr="id => ($mode === 'new' ? 'activetabs' : null)" class="tab">
+            <a n:attr="id => ($mode === 'new' ? 'act_tab_a' : null)" href="?act=new">{_unread}</a>
+        </div>
+        <div n:attr="id => ($mode === 'archived' ? 'activetabs' : null)" class="tab">
+            <a n:attr="id => ($mode === 'archived' ? 'act_tab_a' : null)" href="?act=archived">{_archive}</a>
+        </div>
+    </div>
+
+    {var $data = is_array($iterator) ? $iterator : iterator_to_array($iterator)}
+
+    {if sizeof($data) > 0}
+
+        <div n:class="$mode !== 'new' ? scroll_container">
+            <article class="post scroll_node" n:foreach="$data as $dat">
+
+                {*  У уведомления две модели (например, «кто» и «что»).
+                    Берём ту, у которой есть аватар и ссылка.
+                    Логика из оригинала. *}
+                {var $sxModel = $dat->getModel(1)}
+                {if !(method_exists($sxModel, "getURL") && method_exists($sxModel, "getAvatarUrl"))}
+                    {var $sxModel = $dat->getModel(0)}
+                {/if}
+
+                <div class="post-author-ava">
+                    <a href="{$sxModel->getURL()}">
+                        <img src="{$sxModel->getAvatarUrl('miniscule')}" width="50" alt="" />
+                    </a>
+                </div>
+
+                <div class="post-body">
+                    <div class="post-content">
+                        <div class="text">
+                            {include $dat->getTemplatePath(), notification => $dat}
+                        </div>
+                    </div>
+                </div>
+
+            </article>
+        </div>
+
+        {include "../components/paginator.xml", conf => (object) [
+            "page"     => $page,
+            "count"    => $count,
+            "amount"   => sizeof($data),
+            "perPage"  => $perPage ?? \OPENVK_DEFAULT_PER_PAGE,
+            "atBottom" => true,
+            "atTop"    => false,
+            "tidy"     => false
+        ]}
+
+    {else}
+        {ifset customErrorMessage}
+            {include customErrorMessage}
+        {else}
+            {include "../components/nothing.xml"}
+        {/ifset}
+    {/if}
+
+{/block}

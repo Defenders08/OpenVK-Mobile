@@ -1,0 +1,68 @@
+{*  =========================================================
+    ALBUM — просмотр альбома (/album{owner}_{id}).
+
+    $album, $photos, $paginatorConf.
+
+    Удаление фото из альбома — настоящая ссылка
+    /album{id}/remove_photo/{photoId}.
+    ========================================================= *}
+
+{extends "../@layout.xml"}
+
+{block title}{_album} {$album->getName()}{/block}
+
+{block headIncludes}
+    {var $albumCover = $album->getCoverPhoto()}
+    {var $albumCoverUrl = !is_null($albumCover) ? $albumCover->getURLBySizeId('normal') : ''}
+    <meta property="og:title" content="{$album->getName()} — {$instance_name}" />
+    <meta property="og:url" content="{$baseUrl}/album{$album->getPrettyId()}" />
+    <meta n:if="!empty($albumCoverUrl)" property="og:image" content="{$albumCoverUrl}" />
+    <meta property="og:type" content="article" />
+    <meta name="twitter:title" content="{$album->getName()} — {$instance_name}" />
+    <meta n:if="!empty($albumCoverUrl)" name="twitter:image" content="{$albumCoverUrl}" />
+{/block}
+
+{block header}
+   {$album->getName()}
+{/block}
+
+{block content}
+
+    <div class="tabs">
+        <div id="activetabs" class="tab">
+            <a id="act_tab_a" href="/album{$album->getPrettyId()}">{_photos} <em>{$album->getPhotosCount()}</em></a>
+        </div>
+
+        {* Системные альбомы (аватары, сохранённые) редактировать нельзя. *}
+        {if isset($thisUser) && $album->canBeModifiedBy($thisUser) && !$album->isCreatedBySystem()}
+            <a class="button" href="/photos/upload?album={$album->getPrettyId()}">{_upload_photo}</a>
+            <a class="button" href="/album{$album->getPrettyId()}/edit">{_edit_album}</a>
+        {/if}
+    </div>
+
+    <div n:if="$album->getDescription()" class="summaryBar"><div class="summary">{$album->getDescription()}</div></div>
+
+    {if $album->getPhotosCount() > 0}
+        <div class="vkx-grid scroll_container">
+            {foreach $photos as $photo}
+                {* Удалённые фото пропускаем. Из оригинала. *}
+                {php if($photo->isDeleted()) continue; }
+
+                <div class="vkx-grid-item scroll_node">
+                    <a n:if="isset($thisUser) && $album->canBeModifiedBy($thisUser)"
+                       class="vkx-grid-del album-photo--delete"
+                       href="/album{$album->getPrettyId()}/remove_photo/{$photo->getId()}">&times;</a>
+
+                    <a href="/photo{$photo->getPrettyId()}?from=album{$album->getId()}">
+                        <img src="{$photo->getURLBySizeId('tinier')}" alt="{$photo->getDescription()}" loading="lazy" />
+                    </a>
+                </div>
+            {/foreach}
+        </div>
+
+        {include "../components/paginator.xml", conf => $paginatorConf}
+    {else}
+        {include "../components/nothing.xml"}
+    {/if}
+
+{/block}

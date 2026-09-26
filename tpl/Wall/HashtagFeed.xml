@@ -1,0 +1,34 @@
+{*  =========================================================
+    HASHTAGFEED — записи по хештегу (/hashtag/{tag}).
+
+    $hashtag, $posts, $paginatorConf.
+
+    {php $paginatorConf->count++} — счётчик записей из
+    оригинала. Выглядит странно, но это логика презентера:
+    не трогаем.
+    ========================================================= *}
+
+{extends "../@layout.xml"}
+
+{block title}#{$hashtag}{/block}
+{block header}#{$hashtag}{/block}
+
+{block content}
+
+    <div class="wall-posts">
+        {foreach $posts as $post}
+            <a name="postGarter={$post->getId()}"></a>
+            {include "../components/post.xml", post => $post, onWallOf => true}
+            {php $paginatorConf->count++}
+        {/foreach}
+    </div>
+
+    {include "../components/paginator.xml", conf => $paginatorConf}
+
+    {* В режиме микроблога под записями есть комментарии,
+       поэтому нужен соответствующий штатный скрипт. *}
+    {if isset($thisUser) && $thisUser->hasMicroblogEnabled()}
+        {script "js/al_comments.js"}
+    {/if}
+
+{/block}

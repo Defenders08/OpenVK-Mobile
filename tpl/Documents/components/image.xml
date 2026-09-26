@@ -1,0 +1,53 @@
+{*  ---------------------------------------------------------
+    IMAGE — документ-картинка в галерее.
+
+    $doc, $club, $copyImportance, $showInfo.
+    $embed — для GIF: показывать анимацию поверх превью.
+
+    ХУКИ JS — те же, что в doc.xml:
+      docMainItem + data-id, viewerOpener,
+      edit_icon / report_icon / add_icon / remove_icon.
+
+    Классы doc_shown_by_hover оставлены: показ панелей при
+    наведении делается CSS-ом, без JavaScript.
+
+    ВИЗУАЛ: добавлен класс vkx-doc-grid-item (квадратная плитка,
+    как в вёрстке #sec_photos / .grid-media-item) — остальные
+    классы и их назначение не изменены.
+    --------------------------------------------------------- *}
+
+{var $preview = $doc->hasPreview() ? $doc->getPreview() : NULL}
+{var $copied = !isset($club) ? $doc->isCopiedBy($thisUser) : $doc->isCopiedBy($club)}
+{var $modifiable = $doc->canBeModifiedBy($thisUser)}
+
+{* значения по умолчанию *}
+{var $scroll_context = $scroll_context ?? false}
+{var $embed = $embed ?? false}
+{var $copyImportance = $copyImportance ?? false}
+{var $showInfo = $showInfo ?? false}
+
+<a href="/doc{$doc->getPrettyId()}?key={$doc->getAccessKey()}"
+   n:class="docMainItem, viewerOpener, docGalleryItem, grid-item, vkx-doc-grid-item, $scroll_context ? scroll_node, $embed ? embeddable"
+   data-id="{$doc->getPrettiestId()}">
+
+    <img class="docGalleryItem_main_preview" loading="lazy" src="{$preview->getURLBySizeId('medium')}" alt="" />
+
+    {* GIF: под превью лежит сама анимация. *}
+    {if $embed}
+        <span class="play-button"></span>
+        <img class="docGalleryItem_gif_preview" loading="lazy" src="{$doc->getURL()}" alt="" />
+    {/if}
+
+    <span class="doc_top_panel doc_shown_by_hover" n:if="$thisUser">
+        <span class="doc_volume_action" n:if="!$modifiable" id="report_icon" title="{_report}">!</span>
+        <span class="doc_volume_action" n:if="$modifiable" id="edit_icon" title="{_edit}">✎</span>
+        <span class="doc_volume_action" n:if="!$copied || $copied && $copyImportance" id="add_icon" title="{_add}">+</span>
+        <span class="doc_volume_action" n:if="$copied && !$copyImportance" id="remove_icon" title="{_remove}">×</span>
+    </span>
+
+    <span n:class="doc_bottom_panel, doc_shown_by_hover, doc_content, $showInfo ? info_shown">
+        <span class="doc_name">{$doc->getName()}</span>
+        <span class="doc_bottom_panel_size">{readable_filesize($doc->getFilesize())}</span>
+    </span>
+
+</a>

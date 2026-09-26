@@ -1,0 +1,33 @@
+{*  =========================================================
+    ApiGetContext — фрагмент со списком документов пользователя,
+    подгружается AJAX'ом в окно «Прикрепить» (не только на /docs,
+    поэтому стили дублируются на случай, если vkx-doc-row ещё
+    не был подключен на текущей странице).
+    ========================================================= *}
+
+<input type="hidden" name="count" value="{$count}">
+<input type="hidden" name="pagesCount" value="{$pagesCount}">
+<input type="hidden" name="page" value="{$page}">
+
+{foreach $docs as $doc}
+    <div class='display_flex_row _content vkx-doc-attach-row' data-attachmentdata="{$doc->getVirtualId()}_{$doc->getId()}_{$doc->getAccessKey()}" data-name='{$doc->getName()}'>
+        {include "components/doc.xml", doc => $doc, hideButtons => true}
+    </div>
+{/foreach}
+
+<style>
+    .vkx-doc-attach-row .vkx-doc-row { border-bottom: 1px solid var(--color-border-list); }
+    .vkx-doc-icon { width: 32px; height: 32px; border-radius: 3px; flex-shrink: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; background: var(--color-background-secondary); }
+    .vkx-doc-icon .vkx-fileico { display: flex; width: 100%; height: 100%; }
+    .vkx-doc-icon img.doc_icon { width: 100%; height: 100%; object-fit: cover; border-radius: 3px; }
+    .vkx-doc-icon .vkx-noimg {
+        display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;
+        background: var(--color-background-secondary); color: var(--color-primary-strong); font-size: 9px; font-weight: bold; text-transform: uppercase;
+    }
+    .vkx-doc-row { display: flex; align-items: center; gap: 10px; padding: 8px 6px; background: var(--color-background); cursor: pointer; transition: background 0.1s ease; }
+    .vkx-doc-row:hover { background: var(--color-background-status); }
+    .vkx-doc-info { flex: 1; min-width: 0; }
+    .vkx-doc-info > a { display: block; color: var(--color-primary-strong); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+    .vkx-doc-info > a:hover { text-decoration: underline; }
+    .vkx-doc-info .doc_content_info { font-size: 11px; color: var(--color-text-form); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+</style>

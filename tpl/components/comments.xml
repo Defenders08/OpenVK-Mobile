@@ -1,0 +1,74 @@
+{*  ---------------------------------------------------------
+    COMMENTS — список комментариев + форма добавления.
+
+    Подключается со страниц поста, фото, видео, заметки:
+      $comments — комментарии текущей страницы;
+      $count    — всего комментариев;
+      $page     — номер страницы;
+      $model    — тип объекта ("posts", "photos", "videos", ...);
+      $parent   — сам объект, к которому пишут комментарий;
+      $sort     — порядок сортировки ('asc' / 'desc').
+
+    ВАЖНО: адрес отправки комментария
+    "/al_comments/create/{$model}/{id}" собирается здесь.
+    Это настоящий маршрут OpenVK — не менять.
+
+    id="standaloneCommentBox" — хук al_comments.js.
+    --------------------------------------------------------- *}
+
+{* значения по умолчанию *}
+{var $sort = $sort ?? 'asc'}
+{var $readOnly = $readOnly ?? false}
+{var $custom_id = $custom_id ?? null}
+
+<section class="comments">
+
+    <div class="page-header">
+        <span n:if="$showTitle ?? true">{_comments} ({$count})</span>
+
+        {* Переключение порядка сортировки — обычная ссылка, JS не нужен. *}
+        <a n:if="isset($sort) && $count > 5"
+           class="sort_link"
+           n:attr="href => $sort == 'desc' ? '?sort=asc' : '?sort=desc'">
+            {if $sort == 'desc'}{_new_first}{else}{_old_first}{/if}
+        </a>
+    </div>
+
+    {* Форма нового комментария. *}
+    <div n:ifset="$thisUser" id="standaloneCommentBox">
+        {var $commentsURL = "/al_comments/create/$model/" . $parent->getId()}
+
+        {*  Если комментируют запись в сообществе, textArea должен
+            знать про это сообщество (опция «от имени группы»). *}
+        {var $club = $parent instanceof \openvk\Web\Models\Entities\Post && $parent->getTargetWall() < 0
+                     ? (new openvk\Web\Models\Repositories\Clubs)->get(abs($parent->getTargetWall()))
+                     : ($club ?? null)}
+
+        {if !$readOnly}
+            {include "textArea.xml",
+                     route => $commentsURL,
+                     postOpts => false,
+                     graffiti => (bool) ovkGetQuirk("comments.allow-graffiti"),
+                     club => $club,
+                     custom_id => $custom_id}
+        {/if}
+    </div>
+
+    {if sizeof($comments) > 0}
+        <div class="comments-list scroll_container">
+            <div class="scroll_node" n:foreach="$comments as $comment">
+                {include "comment.xml", comment => $comment, no_reply_button => $readOnly}
+            </div>
+        </div>
+
+        {include "paginator.xml", conf => (object) [
+            "page"    => $page,
+            "count"   => $count,
+            "amount"  => sizeof($comments),
+            "perPage" => 10
+        ]}
+    {else}
+        <div class="comments_tip">{_comments_tip}</div>
+    {/if}
+
+</section>

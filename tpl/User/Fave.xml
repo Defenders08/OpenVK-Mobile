@@ -1,0 +1,93 @@
+{*  =========================================================
+    FAVE — закладки (/fave).
+
+    $section  — что показываем: posts | comments | photos | videos;
+    $data     — элементы текущей страницы;
+    $count    — всего;
+    $paginatorConf, $extendedPaginatorConf — два пагинатора
+    (сверху компактный, снизу обычный).
+
+    Разделы — обычные ссылки /fave?section=...; вкладки в общем
+    стиле темы (.tabs > .tab). Содержимое использует штатные
+    компоненты post / comment / video и OpenMiniature для фото.
+    ========================================================= *}
+
+{extends "../@layout.xml"}
+
+{block title}{_bookmarks_tab}{/block}
+{block header}{_bookmarks_tab}{/block}
+
+{block content}
+
+    <div class="tabs">
+        <div n:attr="id => ($section === 'posts' ? 'activetabs' : null)" class="tab">
+            <a n:attr="id => ($section === 'posts' ? 'act_tab_a' : null)" href="/fave?section=posts">{_s_posts}
+                <em n:if="$section === 'posts' && $count > 0">{$count}</em></a>
+        </div>
+        <div n:attr="id => ($section === 'comments' ? 'activetabs' : null)" class="tab">
+            <a n:attr="id => ($section === 'comments' ? 'act_tab_a' : null)" href="/fave?section=comments">{_s_comments}
+                <em n:if="$section === 'comments' && $count > 0">{$count}</em></a>
+        </div>
+        <div n:attr="id => ($section === 'photos' ? 'activetabs' : null)" class="tab">
+            <a n:attr="id => ($section === 'photos' ? 'act_tab_a' : null)" href="/fave?section=photos">{_s_photos}
+                <em n:if="$section === 'photos' && $count > 0">{$count}</em></a>
+        </div>
+        <div n:attr="id => ($section === 'videos' ? 'activetabs' : null)" class="tab">
+            <a n:attr="id => ($section === 'videos' ? 'act_tab_a' : null)" href="/fave?section=videos">{_s_videos}
+                <em n:if="$section === 'videos' && $count > 0">{$count}</em></a>
+        </div>
+    </div>
+
+    <div class="summaryBar">
+        {tr("faves", $count)}
+        {include "../components/paginator.xml", conf => $paginatorConf}
+    </div>
+
+    <div n:class="scroll_container, ($section === 'photos' && $count > 0) ? 'vkx-grid'" id="search_page">
+
+        {if $count > 0}
+            {foreach $data as $dat}
+
+                {* Элемент мог быть удалён уже после добавления в закладки. *}
+                {if $dat->isDeleted()}
+                    <div class="deleted_mark scroll_node">[deleted]</div>
+                {else}
+
+                    {if $section == "posts"}
+                        <div class="scroll_node">
+                            {include "../components/post.xml", post => $dat, commentSection => true}
+                        </div>
+
+                    {elseif $section == "comments"}
+                        <div class="scroll_node">
+                            {include "../components/comment.xml", comment => $dat,
+                                     correctLink => true, no_reply_button => true}
+                        </div>
+
+                    {elseif $section == "photos"}
+                        <div class="vkx-grid-item scroll_node"
+                             onclick="OpenMiniature(event, {$dat->getURLBySizeId('larger')}, null, {$dat->getPrettyId()}, null)">
+                            <a href="/photo{$dat->getPrettyId()}">
+                                <img src="{$dat->getURLBySizeId('tinier')}" alt="{$dat->getDescription()}" loading="lazy" />
+                            </a>
+                        </div>
+
+                    {elseif $section == "videos"}
+                        <div class="scroll_node">
+                            {include "../components/video.xml", video => $dat}
+                        </div>
+                    {/if}
+
+                {/if}
+            {/foreach}
+        {else}
+            {include "../components/content_error.xml", description => tr("faves_" . $section . "_empty_tip")}
+        {/if}
+
+    </div>
+
+    <div n:if="$paginatorConf->pageCount > 1">
+        {include "../components/paginator.xml", conf => $extendedPaginatorConf}
+    </div>
+
+{/block}

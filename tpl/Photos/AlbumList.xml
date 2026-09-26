@@ -1,0 +1,69 @@
+{*  =========================================================
+    ALBUM LIST — список альбомов (/albums{N}).
+
+    $albums, $count, $paginatorConf, $owner, $canEdit.
+    Наследует @listView.xml, список рисует блоком specpage
+    (карточки-сетка). Ссылки на альбомы — настоящие /album{id}.
+
+    У сообществ ID в ссылках отрицательный, поэтому для
+    создания альбома добавляется ?gpid= — это из оригинала.
+    ========================================================= *}
+
+{extends "../@listView.xml"}
+
+{var $iterator = iterator_to_array($albums)}
+{var $page = $paginatorConf->page}
+
+{block title}{_albums} {$owner->getCanonicalName()}{/block}
+
+{block header}
+    {if isset($thisUser) && $thisUser->getId() == $owner->getRealId()}
+        {_my_photos}
+    {else}
+        <a href="{$owner->getURL()}">
+        {_albums}</a>
+    {/if}
+{/block}
+
+{block tabs}
+    <div id="activetabs" class="tab">
+        <a id="act_tab_a" href="/albums{$owner->getId()}">
+            {_albums} <em>{$count}</em>
+        </a>
+    </div>
+
+    {if $canEdit}
+        {var $isClub = ($owner instanceof \openvk\Web\Models\Entities\Club)}
+        <a href="/albums/create{$isClub ? '?gpid=' . $owner->getId() : ''}" class="button">{_create_album}</a>
+    {/if}
+{/block}
+
+{block size}{/block}
+{block actions}{/block}
+
+{block specpage}
+    <div class="summaryBar">
+        <div class="summary">{tr("albums", $count)}</div>
+    </div>
+
+    {if sizeof($iterator) > 0}
+        <div class="vkx-albums scroll_container">
+            <a n:foreach="$iterator as $album" class="vkx-album scroll_node" href="/album{$album->getPrettyId()}">
+                {* Обложки может не быть — тогда ставим заглушку движка. *}
+                {var $cover = $album->getCoverPhoto()}
+                <span class="vkx-album-cover">
+                    <img src="{is_null($cover) ? '/assets/packages/static/openvk/img/camera_200.png' : $cover->getURLBySizeId('normal')}"
+                         alt="{$album->getName()}" loading="lazy" />
+                </span>
+                <span class="vkx-album-meta">
+                    <b>{$album->getName()}</b>
+                    <span>{$album->getPhotosCount()} {_photos}</span>
+                </span>
+            </a>
+        </div>
+
+        {include "../components/paginator.xml", conf => $paginatorConf}
+    {else}
+        {include "../components/nothing.xml"}
+    {/if}
+{/block}

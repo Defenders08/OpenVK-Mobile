@@ -1,0 +1,60 @@
+{*  =========================================================
+    @MilkshakeListView.xml — список с колонкой действий справа.
+
+    Используется там, где рядом со списком нужны общие действия
+    и сортировка (блок `actions` обязателен).
+
+    Ссылки сортировки (?C=I;O=R и т.п.) — настоящие GET-параметры
+    OpenVK, менять их нельзя.
+    ========================================================= *}
+
+{extends "@layout.xml"}
+
+{block wrap}
+
+    <div class="page milkshake">
+
+        <div class="milkshake-list">
+            {var $data = is_array($iterator) ? $iterator : iterator_to_array($iterator)}
+
+            {if sizeof($data) > 0}
+
+                <div class="list-item" n:foreach="$data as $dat">
+                    <div class="list-item-cover">{include preview, x => $dat}</div>
+                    <div class="list-item-info">
+                        <a href="{include link, x => $dat}"><b>{include name, x => $dat}</b></a>
+                        <div>{include description, x => $dat}</div>
+                    </div>
+                </div>
+
+                {include "components/paginator.xml", conf => (object) [
+                    "page"    => $page,
+                    "count"   => $count,
+                    "amount"  => sizeof($data),
+                    "perPage" => $perPage ?? \OPENVK_DEFAULT_PER_PAGE,
+                    "atTop"   => false,
+                    "tidy"    => false
+                ]}
+
+            {else}
+                {ifset customErrorMessage}
+                    {include customErrorMessage}
+                {else}
+                    {include "components/nothing.xml"}
+                {/ifset}
+            {/if}
+        </div>
+
+        <div class="milkshake-actions">
+            {include actions}
+
+            <div n:if="$sorting ?? true" class="milkshake-sorting">
+                <a href="?C=I;O=R">{_sort_randomly}</a>
+                <a href="?C=M;O=D">{_sort_up}</a>
+                <a href="?C=M;O=A">{_sort_down}</a>
+            </div>
+        </div>
+
+    </div>
+
+{/block}

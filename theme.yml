@@ -1,0 +1,16 @@
+id: ovk_mobile
+version: "0.0.1.0"
+openvk_version: 0
+enabled: 1
+
+override_templates: true
+inherits_master: false
+
+metadata:
+    name:
+        _: "OVK Mobile by Defenders08"
+        en: "OVK Mobile by Defenders08"
+        ru: "OVK Mobile by Defenders08"
+    author: "Defenders08"
+    description: "The fate of the world is safe in Crystal Castles."
+    
